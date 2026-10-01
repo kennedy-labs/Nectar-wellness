@@ -4,31 +4,36 @@
       "id": "cat_powders",
       "name": "Herbal Powders",
       "slug": "herbal-powders",
-      "description": "Stone-ground organic leaves, roots, and botanicals for daily smoothies and tonics."
+      "description": "Stone-ground organic leaves, roots, and botanicals for daily smoothies and tonics.",
+      "isActive": true
     },
     {
       "id": "cat_oils",
       "name": "Natural Oils & Balms",
       "slug": "natural-oils",
-      "description": "Cold-pressed therapeutic seed oils and herbal balms for skin and scalp wellness."
+      "description": "Cold-pressed therapeutic seed oils and herbal balms for skin and scalp wellness.",
+      "isActive": true
     },
     {
       "id": "cat_resins",
       "name": "Pure Resins & Shilajit",
       "slug": "resins-shilajit",
-      "description": "Authentic wild-harvested mineral resins traditionally used to support cellular vitality."
+      "description": "Authentic wild-harvested mineral resins traditionally used to support cellular vitality.",
+      "isActive": true
     },
     {
       "id": "cat_teas",
       "name": "Teas & Herbal Infusions",
       "slug": "teas-infusions",
-      "description": "Hand-blended loose leaf tisanes crafted from locally harvested African herbs."
+      "description": "Hand-blended loose leaf tisanes crafted from locally harvested African herbs.",
+      "isActive": true
     },
     {
       "id": "cat_tinctures",
       "name": "Tinctures & Extracts",
       "slug": "tinctures-extracts",
-      "description": "Concentrated botanical liquid drops formulated for rapid cellular absorption."
+      "description": "Concentrated botanical liquid drops formulated for rapid cellular absorption.",
+      "isActive": true
     }
   ],
   "products": [

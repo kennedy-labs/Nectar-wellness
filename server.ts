@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
+import fs from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
@@ -167,10 +169,25 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Production mode: serve built assets
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    // Production mode: verify dist folder exists or build it
+    const distPath = path.resolve(__dirname, 'dist');
+    const indexPath = path.resolve(distPath, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      console.log('📦 Client bundle not found. Building with Vite for production...');
+      try {
+        execSync('npm run build || bun run build || npx vite build', { stdio: 'inherit' });
+      } catch (buildErr: any) {
+        console.error('Failed to auto-build client bundle:', buildErr.message);
+      }
+    }
+
+    app.use(express.static(distPath));
     app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(500).send('Client build is processing. Please refresh in a few moments.');
+      }
     });
   }
 
