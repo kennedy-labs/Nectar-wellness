@@ -55,7 +55,7 @@ export default function App() {
   const [trackOrderId, setTrackOrderId] = useState<string>('');
 
   // Admin Auth State
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => storage.isAdminLoggedIn());
 
   // Added animation tracker
   const [addedProductIds, setAddedProductIds] = useState<Set<string>>(new Set());

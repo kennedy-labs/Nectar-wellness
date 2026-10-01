@@ -161,6 +161,15 @@ async function startServer() {
     }
   });
 
+  // Serve static asset folders directly (ensures images always load in dev & cloud deployments)
+  app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
+  app.use('/assets', express.static(path.resolve(__dirname, 'src/assets')));
+  app.use('/images', express.static(path.resolve(__dirname, 'src/assets/images')));
+  const publicDir = path.resolve(__dirname, 'public');
+  if (fs.existsSync(publicDir)) {
+    app.use(express.static(publicDir));
+  }
+
   // Dev mode: Mount Vite middleware
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

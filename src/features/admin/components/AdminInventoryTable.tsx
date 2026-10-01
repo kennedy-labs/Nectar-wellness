@@ -204,6 +204,7 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
                         <div className="flex items-center gap-2">
                           <div className="flex items-center border border-[#DAD8CF] rounded-lg bg-white overflow-hidden shadow-2xs">
                             <button
+                              type="button"
                               onClick={() =>
                                 onUpdateStock(
                                   product.id,
@@ -219,6 +220,7 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
                               {product.stockQuantity}
                             </span>
                             <button
+                              type="button"
                               onClick={() =>
                                 onUpdateStock(product.id, product.stockQuantity + 1)
                               }

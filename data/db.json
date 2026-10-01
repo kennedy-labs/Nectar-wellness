@@ -53,14 +53,14 @@
       ],
       "usageInstructions": "Warm a pea-sized quantity between fingertips and gently press into targeted skin areas, elbows, heels, or scalp twice daily.",
       "price": 1200,
-      "stockQuantity": 20,
+      "stockQuantity": 25,
       "categoryId": "cat_oils",
       "categoryName": "Natural Oils & Balms",
       "image": "/src/assets/images/product_ashwagandha_tincture_1790820615059.jpg",
       "isFeatured": false,
       "isActive": true,
       "createdAt": "2026-09-22T15:00:00.000Z",
-      "updatedAt": "2026-09-30T10:00:00.000Z"
+      "updatedAt": "2026-10-01T16:28:12.133Z"
     },
     {
       "id": "prod_hibiscus_lemongrass_tea",
@@ -225,8 +225,8 @@
       "paymentReference": "QJK8912P4",
       "status": "PROCESSING",
       "adminNotes": "Bolt rider dispatched, package verified with herbal usage guide.",
-      "createdAt": "2026-10-01T04:05:56.641Z",
-      "updatedAt": "2026-10-01T06:05:56.641Z"
+      "createdAt": "2026-10-01T12:33:29.610Z",
+      "updatedAt": "2026-10-01T14:33:29.610Z"
     }
   ]
 }
