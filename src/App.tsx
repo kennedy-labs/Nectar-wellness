@@ -11,7 +11,7 @@ import { TrustFeatures } from './components/layout/TrustFeatures';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { Footer } from './components/layout/Footer';
 
-// Feature Components
+// Customer Feature Components
 import { ProductFilter } from './features/products/components/ProductFilter';
 import { ProductGrid } from './features/products/components/ProductGrid';
 import { ProductDetailModal } from './features/products/components/ProductDetailModal';
@@ -19,11 +19,24 @@ import { CartDrawer } from './features/cart/components/CartDrawer';
 import { CheckoutModal } from './features/checkout/components/CheckoutModal';
 import { OrderSuccessModal } from './features/checkout/components/OrderSuccessModal';
 import { OrderTrackerModal } from './features/orders/components/OrderTrackerModal';
-import { AdminLoginModal } from './features/admin/components/AdminLoginModal';
-import { AdminDashboard } from './features/admin/components/AdminDashboard';
+
+// Dedicated Standalone Admin Page
+import { AdminPage } from './features/admin/pages/AdminPage';
 
 export default function App() {
-  // Core State
+  // Routing State: '/' for customer storefront, '/admin' for isolated owner portal
+  const [currentRoute, setCurrentRoute] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/admin' || path.startsWith('/admin') || hash === '#admin') {
+        return '/admin';
+      }
+    }
+    return '/';
+  });
+
+  // Core Data State
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -33,19 +46,49 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Modals & Drawers
+  // Customer Modals & Drawers
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [isTrackOpen, setIsTrackOpen] = useState(false);
   const [trackOrderId, setTrackOrderId] = useState<string>('');
-  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  // Admin Auth State
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
   // Added animation tracker
   const [addedProductIds, setAddedProductIds] = useState<Set<string>>(new Set());
+
+  // Listen to browser navigation changes
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/admin' || path.startsWith('/admin') || hash === '#admin') {
+        setCurrentRoute('/admin');
+      } else {
+        setCurrentRoute('/');
+      }
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  const navigateTo = (route: string) => {
+    setCurrentRoute(route);
+    if (route === '/admin') {
+      window.history.pushState({}, '', '/admin');
+    } else {
+      window.history.pushState({}, '', '/');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Initial Data Load
   useEffect(() => {
@@ -189,7 +232,6 @@ export default function App() {
     const success = await api.loginAdmin(pin);
     if (success) {
       setIsAdminLoggedIn(true);
-      setIsAdminOpen(true);
     }
     return success;
   };
@@ -197,7 +239,6 @@ export default function App() {
   const handleAdminLogout = () => {
     storage.setAdminLoggedIn(false);
     setIsAdminLoggedIn(false);
-    setIsAdminOpen(false);
   };
 
   const handleUpdateDeliveryFee = async (orderId: string, fee: number, notes?: string) => {
@@ -218,7 +259,6 @@ export default function App() {
     const updated = await api.confirmPayment(orderId, reference);
     if (updated) {
       setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
-      // Refresh products to reflect decremented stock
       const freshProducts = await api.getProducts();
       setProducts(freshProducts);
     }
@@ -276,21 +316,40 @@ export default function App() {
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // -------------------------------------------------------------
+  // SEPARATE OWNER MANAGEMENT ROUTE: /admin
+  // -------------------------------------------------------------
+  if (currentRoute === '/admin') {
+    return (
+      <AdminPage
+        orders={orders}
+        products={products}
+        categories={categories}
+        isLoggedIn={isAdminLoggedIn}
+        onLogin={handleAdminLogin}
+        onLogout={handleAdminLogout}
+        onNavigateHome={() => navigateTo('/')}
+        onUpdateDeliveryFee={handleUpdateDeliveryFee}
+        onUpdateStatus={handleUpdateOrderStatus}
+        onConfirmPayment={handleConfirmPayment}
+        onSaveProduct={handleSaveProduct}
+        onUpdateStock={handleUpdateStock}
+        onToggleActive={handleToggleProductActive}
+      />
+    );
+  }
+
+  // -------------------------------------------------------------
+  // CLEAN CUSTOMER STOREFRONT ROUTE: /
+  // -------------------------------------------------------------
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF7] text-[#242A24]">
-      {/* Top Bar Contract (Zone 1 Wordmark, Zone 2 Text Links, Zone 3 Actions) */}
+      {/* Customer Top Bar (No Admin / Owner Buttons) */}
       <TopBar
         cartCount={cartCount}
         cartSubtotal={cartSubtotal}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenTrack={() => setIsTrackOpen(true)}
-        onOpenAdmin={() => {
-          if (isAdminLoggedIn) {
-            setIsAdminOpen(true);
-          } else {
-            setIsAdminLoginOpen(true);
-          }
-        }}
         onScrollToProducts={scrollToProducts}
         onScrollToDelivery={scrollToDelivery}
       />
@@ -341,23 +400,16 @@ export default function App() {
         </section>
       </main>
 
-      {/* Footer with Compliance & Medical Health Disclaimer */}
+      {/* Footer with Compliance & Medical Health Disclaimer (Zero Admin Links) */}
       <Footer
-        onOpenAdmin={() => {
-          if (isAdminLoggedIn) {
-            setIsAdminOpen(true);
-          } else {
-            setIsAdminLoginOpen(true);
-          }
-        }}
         onOpenTrack={() => setIsTrackOpen(true)}
         onScrollToProducts={scrollToProducts}
       />
 
-      {/* Quick Floating WhatsApp CTA */}
+      {/* Quick Floating WhatsApp CTA for Customers */}
       <WhatsAppFloatingButton />
 
-      {/* Drawers & Modals */}
+      {/* Customer Drawers & Modals */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -396,27 +448,6 @@ export default function App() {
         onClose={() => setIsTrackOpen(false)}
         initialOrderId={trackOrderId}
         onSearchOrder={handleSearchOrder}
-      />
-
-      <AdminLoginModal
-        isOpen={isAdminLoginOpen}
-        onClose={() => setIsAdminLoginOpen(false)}
-        onLogin={handleAdminLogin}
-      />
-
-      <AdminDashboard
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        onLogout={handleAdminLogout}
-        orders={orders}
-        products={products}
-        categories={categories}
-        onUpdateDeliveryFee={handleUpdateDeliveryFee}
-        onUpdateStatus={handleUpdateOrderStatus}
-        onConfirmPayment={handleConfirmPayment}
-        onSaveProduct={handleSaveProduct}
-        onUpdateStock={handleUpdateStock}
-        onToggleActive={handleToggleProductActive}
       />
     </div>
   );

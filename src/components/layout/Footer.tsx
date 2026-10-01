@@ -3,13 +3,11 @@ import { ShieldAlert, MapPin, Phone, Clock, MessageCircle } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../config/constants';
 
 interface FooterProps {
-  onOpenAdmin: () => void;
   onOpenTrack: () => void;
   onScrollToProducts: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  onOpenAdmin,
   onOpenTrack,
   onScrollToProducts,
 }) => {
@@ -51,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({
                   onClick={onScrollToProducts}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
-                  All Products
+                  All Remedies
                 </button>
               </li>
               <li>
@@ -69,14 +67,6 @@ export const Footer: React.FC<FooterProps> = ({
                 >
                   Delivery & Logistics
                 </a>
-              </li>
-              <li>
-                <button
-                  onClick={onOpenAdmin}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Owner Portal
-                </button>
               </li>
             </ul>
           </div>
@@ -135,14 +125,9 @@ export const Footer: React.FC<FooterProps> = ({
             © {new Date().getFullYear()} {BUSINESS_CONFIG.name}. All rights reserved. Nairobi, Kenya.
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={onOpenAdmin}
-              className="text-[#9BB2A1] hover:text-white transition-colors cursor-pointer"
-            >
-              Authorized Admin Access
-            </button>
+            <span>Bazaar Plaza, Moi Avenue, Nairobi CBD</span>
             <span aria-hidden="true">·</span>
-            <span>Handcrafted Natural Health</span>
+            <span>Pure Botanical Formulations</span>
           </div>
         </div>
       </div>

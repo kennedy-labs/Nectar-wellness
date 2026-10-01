@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Search, ShieldCheck } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import { formatKES } from '../../lib/utils';
 
 interface TopBarProps {
@@ -7,7 +7,6 @@ interface TopBarProps {
   cartSubtotal: number;
   onOpenCart: () => void;
   onOpenTrack: () => void;
-  onOpenAdmin: () => void;
   onScrollToProducts: () => void;
   onScrollToDelivery: () => void;
 }
@@ -17,7 +16,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   cartSubtotal,
   onOpenCart,
   onOpenTrack,
-  onOpenAdmin,
   onScrollToProducts,
   onScrollToDelivery,
 }) => {
@@ -62,18 +60,9 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenTrack}
-            className="md:hidden text-xs font-medium text-[#4E564F] hover:text-[#1E3B2F] px-2.5 py-1.5 rounded-lg border border-[#E0DED7] transition-colors"
+            className="text-xs font-medium text-[#4E564F] hover:text-[#1E3B2F] px-2.5 py-1.5 rounded-lg border border-[#E0DED7] transition-colors cursor-pointer"
           >
-            Track
-          </button>
-
-          <button
-            onClick={onOpenAdmin}
-            title="Owner Portal"
-            className="text-xs font-medium text-[#647067] hover:text-[#1E3B2F] px-2.5 py-1.5 rounded-lg border border-[#E0DED7] hover:border-[#1E3B2F]/30 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-[#3A624F]" />
-            <span className="hidden sm:inline">Owner</span>
+            Track Order
           </button>
 
           <button
