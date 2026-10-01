@@ -1,0 +1,6 @@
+{
+  "name": "Nature’s Nectar Wellness",
+  "description": "Natural wellness and herbal apothecary e-commerce platform with dynamic delivery pricing, order review workflow, and seamless WhatsApp integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
