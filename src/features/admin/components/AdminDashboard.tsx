@@ -18,6 +18,8 @@ interface AdminDashboardProps {
   onUpdateStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>;
   onConfirmPayment: (orderId: string, reference: string) => Promise<void>;
   onSaveProduct: (productData: Partial<Product>) => Promise<void>;
+  onDeleteProduct?: (productId: string) => Promise<void>;
+  onDuplicateProduct?: (product: Product) => Promise<void>;
   onUpdateStock: (productId: string, stock: number) => Promise<void>;
   onToggleActive: (product: Product) => Promise<void>;
 }
@@ -33,6 +35,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateStatus,
   onConfirmPayment,
   onSaveProduct,
+  onDeleteProduct,
+  onDuplicateProduct,
   onUpdateStock,
   onToggleActive,
 }) => {
@@ -185,6 +189,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }}
               onUpdateStock={onUpdateStock}
               onToggleActive={onToggleActive}
+              onDeleteProduct={onDeleteProduct || (async () => {})}
+              onDuplicateProduct={onDuplicateProduct || (async () => {})}
             />
           )}
         </div>
@@ -197,6 +203,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             isOpen={isEditorOpen}
             onClose={() => setIsEditorOpen(false)}
             onSave={onSaveProduct}
+            onDelete={onDeleteProduct}
           />
         )}
       </div>

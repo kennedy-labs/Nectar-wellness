@@ -97,6 +97,26 @@ export const api = {
     return target;
   },
 
+  async deleteProduct(productId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (json.success) {
+        const products = storage.getProducts().filter((p) => p.id !== productId);
+        storage.saveProducts(products);
+        return true;
+      }
+    } catch {
+      // Local fallback
+    }
+
+    const products = storage.getProducts().filter((p) => p.id !== productId);
+    storage.saveProducts(products);
+    return true;
+  },
+
   // Categories
   async getCategories(): Promise<Category[]> {
     try {

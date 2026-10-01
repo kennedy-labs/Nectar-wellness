@@ -37,9 +37,7 @@ export const repository = {
     const data = db.read();
     const existingIndex = data.products.findIndex((p) => p.id === id);
     if (existingIndex >= 0) {
-      // Soft deactivate
-      data.products[existingIndex].isActive = false;
-      data.products[existingIndex].updatedAt = new Date().toISOString();
+      data.products.splice(existingIndex, 1);
       db.write(data);
       return true;
     }

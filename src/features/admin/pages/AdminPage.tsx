@@ -32,6 +32,8 @@ interface AdminPageProps {
   onUpdateStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>;
   onConfirmPayment: (orderId: string, reference: string) => Promise<void>;
   onSaveProduct: (productData: Partial<Product>) => Promise<void>;
+  onDeleteProduct: (productId: string) => Promise<void>;
+  onDuplicateProduct: (product: Product) => Promise<void>;
   onUpdateStock: (productId: string, stock: number) => Promise<void>;
   onToggleActive: (product: Product) => Promise<void>;
 }
@@ -48,6 +50,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   onUpdateStatus,
   onConfirmPayment,
   onSaveProduct,
+  onDeleteProduct,
+  onDuplicateProduct,
   onUpdateStock,
   onToggleActive,
 }) => {
@@ -307,6 +311,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               }}
               onUpdateStock={onUpdateStock}
               onToggleActive={onToggleActive}
+              onDeleteProduct={onDeleteProduct}
+              onDuplicateProduct={onDuplicateProduct}
             />
           </div>
         )}
@@ -363,6 +369,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             isOpen={isEditorOpen}
             onClose={() => setIsEditorOpen(false)}
             onSave={onSaveProduct}
+            onDelete={onDeleteProduct}
           />
         )}
       </main>

@@ -57,6 +57,9 @@ export const service = {
     product.updatedAt = new Date().toISOString();
     return repository.saveProduct(product);
   },
+  deleteProduct(productId: string): boolean {
+    return repository.deleteProduct(productId);
+  },
 
   // Orders
   createOrder(dto: CreateOrderDTO): Order {

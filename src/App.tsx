@@ -272,6 +272,30 @@ export default function App() {
     }
   };
 
+  const handleDeleteProduct = async (productId: string) => {
+    const ok = await api.deleteProduct(productId);
+    if (ok) {
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+    }
+  };
+
+  const handleDuplicateProduct = async (product: Product) => {
+    await handleSaveProduct({
+      name: `${product.name} (Copy)`,
+      categoryId: product.categoryId,
+      categoryName: product.categoryName,
+      price: product.price,
+      stockQuantity: product.stockQuantity,
+      description: product.description,
+      benefits: [...product.benefits],
+      ingredients: [...product.ingredients],
+      usageInstructions: product.usageInstructions,
+      image: product.image,
+      isFeatured: false,
+      isActive: true,
+    });
+  };
+
   const handleUpdateStock = async (productId: string, stock: number) => {
     const updated = await api.updateStock(productId, stock);
     if (updated) {
@@ -333,6 +357,8 @@ export default function App() {
         onUpdateStatus={handleUpdateOrderStatus}
         onConfirmPayment={handleConfirmPayment}
         onSaveProduct={handleSaveProduct}
+        onDeleteProduct={handleDeleteProduct}
+        onDuplicateProduct={handleDuplicateProduct}
         onUpdateStock={handleUpdateStock}
         onToggleActive={handleToggleProductActive}
       />
