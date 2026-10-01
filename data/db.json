@@ -1,140 +1,60 @@
 {
   "categories": [
     {
-      "id": "cat_resins",
-      "name": "Pure Resins & Shilajit",
-      "slug": "resins-shilajit",
-      "description": "Authentic wild-harvested mineral resins traditionally used to support cellular vitality.",
-      "isActive": true
-    },
-    {
       "id": "cat_powders",
       "name": "Herbal Powders",
       "slug": "herbal-powders",
-      "description": "Stone-ground organic leaves, roots, and botanicals for daily smoothies and tonics.",
-      "isActive": true
-    },
-    {
-      "id": "cat_tinctures",
-      "name": "Tinctures & Extracts",
-      "slug": "tinctures-extracts",
-      "description": "Concentrated botanical liquid drops formulated for rapid cellular absorption.",
-      "isActive": true
-    },
-    {
-      "id": "cat_teas",
-      "name": "Teas & Herbal Infusions",
-      "slug": "teas-infusions",
-      "description": "Hand-blended loose leaf tisanes crafted from locally harvested African herbs.",
-      "isActive": true
+      "description": "Stone-ground organic leaves, roots, and botanicals for daily smoothies and tonics."
     },
     {
       "id": "cat_oils",
       "name": "Natural Oils & Balms",
       "slug": "natural-oils",
-      "description": "Cold-pressed therapeutic seed oils and herbal balms for skin and scalp wellness.",
-      "isActive": true
+      "description": "Cold-pressed therapeutic seed oils and herbal balms for skin and scalp wellness."
+    },
+    {
+      "id": "cat_resins",
+      "name": "Pure Resins & Shilajit",
+      "slug": "resins-shilajit",
+      "description": "Authentic wild-harvested mineral resins traditionally used to support cellular vitality."
+    },
+    {
+      "id": "cat_teas",
+      "name": "Teas & Herbal Infusions",
+      "slug": "teas-infusions",
+      "description": "Hand-blended loose leaf tisanes crafted from locally harvested African herbs."
+    },
+    {
+      "id": "cat_tinctures",
+      "name": "Tinctures & Extracts",
+      "slug": "tinctures-extracts",
+      "description": "Concentrated botanical liquid drops formulated for rapid cellular absorption."
     }
   ],
   "products": [
     {
-      "id": "prod_shilajit_gold",
-      "name": "Pure Himalayan Shilajit Resin (Gold Grade)",
-      "slug": "pure-himalayan-shilajit-resin-gold-grade",
-      "description": "Authentic, purified raw mineral pitch wild-harvested from high-altitude rock fissures. Naturally rich in fulvic acid, humic compounds, and over 84 ionic trace minerals. Traditionally used in Ayurvedic wellness to support sustained energy, mental clarity, and cellular replenishment.",
+      "id": "prod_neem_balm",
+      "name": "Artisanal Cold-Pressed Neem & Tea Tree Botanical Balm",
+      "slug": "artisanal-cold-pressed-neem-tea-tree-botanical-balm",
+      "description": "Soothing topical restorative balm hand-whipped with wild-crafted coastal neem seed oil, unrefined organic shea butter, and pure Australian tea tree essential oil. Formulated to calm irritated, dry, or blemish-prone skin naturally.",
       "benefits": [
-        "Commonly associated with supporting healthy energy levels and physical endurance",
-        "Contains naturally occurring fulvic acid to assist nutrient bioavailability",
-        "Traditionally used to support cognitive focus and daily resilience",
-        "Provides bioavailable ionic trace minerals"
+        "Traditionally used to comfort dry, flaky, or sensitive skin patches",
+        "Botanical nourishment for soothing scalp irritation and beard care",
+        "Zero petrochemicals, parabens, synthetic fragrances, or fillers",
+        "Moisture-locking protective barrier made with raw African shea"
       ],
       "ingredients": [
-        "100% Purified High-Altitude Himalayan Shilajit Resin (Minimum 65% Fulvic Acid)"
+        "Unrefined Nilotica Shea Butter, Cold-Pressed Neem Seed Oil, Pure Tea Tree Oil, Cold-Pressed Jojoba Oil, Beeswax"
       ],
-      "usageInstructions": "Dissolve a pea-sized portion (300mg–500mg) using the included measuring stick in warm filtered water, herbal tea, or raw milk. Consume once daily in the morning.",
-      "price": 3800,
-      "stockQuantity": 18,
-      "categoryId": "cat_resins",
-      "categoryName": "Pure Resins & Shilajit",
-      "image": "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
-      "isFeatured": true,
-      "isActive": true,
-      "createdAt": "2026-09-15T08:00:00.000Z",
-      "updatedAt": "2026-09-30T10:00:00.000Z"
-    },
-    {
-      "id": "prod_moringa_powder",
-      "name": "Kilifi Raw Organic Moringa Leaf Powder",
-      "slug": "kilifi-raw-organic-moringa-leaf-powder",
-      "description": "Hand-picked, shade-dried organic moringa oleifera leaves harvested sustainably from coastal Kilifi smallholder farms. Stone-milled to an ultra-fine vibrant green powder to preserve heat-sensitive enzymes, plant chlorophyll, and essential amino acids.",
-      "benefits": [
-        "Traditionally used as a comprehensive daily plant-based nutritional booster",
-        "Rich natural source of iron, calcium, vitamin A, and plant antioxidants",
-        "Supports daily metabolic wellness and natural immune function",
-        "Gentle digestive nourishment without artificial additives"
-      ],
-      "ingredients": [
-        "100% Certified Organic Kenyan Moringa Oleifera Leaf Powder"
-      ],
-      "usageInstructions": "Mix 1 teaspoon (approx 5g) into fresh juices, smoothies, warm water with lemon, or sprinkle over warm soups and salads.",
-      "price": 950,
-      "stockQuantity": 32,
-      "categoryId": "cat_powders",
-      "categoryName": "Herbal Powders",
-      "image": "/src/assets/images/product_moringa_powder_1790820605379.jpg",
-      "isFeatured": true,
-      "isActive": true,
-      "createdAt": "2026-09-16T09:00:00.000Z",
-      "updatedAt": "2026-09-30T10:00:00.000Z"
-    },
-    {
-      "id": "prod_ashwagandha_tincture",
-      "name": "Organic Ashwagandha Root Extract (KSM-66)",
-      "slug": "organic-ashwagandha-root-extract",
-      "description": "Full-spectrum dual-extracted adaptogenic elixir prepared from mature organically cultivated Withania somnifera roots. Formulated to help the body adapt to physiological stressors while nurturing calm mental poise and restful sleep patterns.",
-      "benefits": [
-        "Traditionally used to help support the nervous system during demanding periods",
-        "Commonly associated with promoting deeper, more restorative night sleep",
-        "Supports balanced evening cortisol and mindful calm",
-        "Alcohol-free vegetable glycerine base for smooth, soothing flavor"
-      ],
-      "ingredients": [
-        "Organic Ashwagandha (Withania somnifera) Root Extract, Organic Vegetable Glycerine, Purified Spring Water"
-      ],
-      "usageInstructions": "Take 1 to 2 full droppers (approx 1ml) directly under the tongue or stir into a small cup of warm chamomile tea 30 minutes before bedtime.",
-      "price": 2400,
-      "stockQuantity": 14,
-      "categoryId": "cat_tinctures",
-      "categoryName": "Tinctures & Extracts",
+      "usageInstructions": "Warm a pea-sized quantity between fingertips and gently press into targeted skin areas, elbows, heels, or scalp twice daily.",
+      "price": 1200,
+      "stockQuantity": 20,
+      "categoryId": "cat_oils",
+      "categoryName": "Natural Oils & Balms",
       "image": "/src/assets/images/product_ashwagandha_tincture_1790820615059.jpg",
-      "isFeatured": true,
+      "isFeatured": false,
       "isActive": true,
-      "createdAt": "2026-09-18T11:00:00.000Z",
-      "updatedAt": "2026-09-30T10:00:00.000Z"
-    },
-    {
-      "id": "prod_wildflower_honey_propolis",
-      "name": "Mau Forest Raw Honey with Kenyan Propolis",
-      "slug": "mau-forest-raw-honey-with-kenyan-propolis",
-      "description": "Unfiltered, unpasteurized amber forest honey harvested from indigenous log hives bordering Mau Forest, infused with wild artisanal bee propolis extract. Naturally retains living enzymes, wild pollen grains, and rich resinous antioxidants.",
-      "benefits": [
-        "Traditionally used to soothe throat tickles and support vocal health",
-        "Provides raw phytonutrients and live bee enzyme activity",
-        "Natural morning energy sweetener with lower glycemic impact than refined sugars",
-        "Kenyan propolis provides traditional seasonal immune support"
-      ],
-      "ingredients": [
-        "100% Raw Unpasteurized Forest Honey, Pure Artisanal Kenyan Bee Propolis Extract (5%)"
-      ],
-      "usageInstructions": "Take 1 tablespoon directly as needed or stir into warm water with ginger and lemon. (Do not heat above 40°C to preserve live enzymes).",
-      "price": 1650,
-      "stockQuantity": 24,
-      "categoryId": "cat_resins",
-      "categoryName": "Pure Resins & Shilajit",
-      "image": "/src/assets/images/hero_wellness_botanicals_1790820582973.jpg",
-      "isFeatured": true,
-      "isActive": true,
-      "createdAt": "2026-09-20T12:00:00.000Z",
+      "createdAt": "2026-09-22T15:00:00.000Z",
       "updatedAt": "2026-09-30T10:00:00.000Z"
     },
     {
@@ -163,28 +83,103 @@
       "updatedAt": "2026-09-30T10:00:00.000Z"
     },
     {
-      "id": "prod_neem_balm",
-      "name": "Artisanal Cold-Pressed Neem & Tea Tree Botanical Balm",
-      "slug": "artisanal-cold-pressed-neem-tea-tree-botanical-balm",
-      "description": "Soothing topical restorative balm hand-whipped with wild-crafted coastal neem seed oil, unrefined organic shea butter, and pure Australian tea tree essential oil. Formulated to calm irritated, dry, or blemish-prone skin naturally.",
+      "id": "prod_wildflower_honey_propolis",
+      "name": "Mau Forest Raw Honey with Kenyan Propolis",
+      "slug": "mau-forest-raw-honey-with-kenyan-propolis",
+      "description": "Unfiltered, unpasteurized amber forest honey harvested from indigenous log hives bordering Mau Forest, infused with wild artisanal bee propolis extract. Naturally retains living enzymes, wild pollen grains, and rich resinous antioxidants.",
       "benefits": [
-        "Traditionally used to comfort dry, flaky, or sensitive skin patches",
-        "Botanical nourishment for soothing scalp irritation and beard care",
-        "Zero petrochemicals, parabens, synthetic fragrances, or fillers",
-        "Moisture-locking protective barrier made with raw African shea"
+        "Traditionally used to soothe throat tickles and support vocal health",
+        "Provides raw phytonutrients and live bee enzyme activity",
+        "Natural morning energy sweetener with lower glycemic impact than refined sugars",
+        "Kenyan propolis provides traditional seasonal immune support"
       ],
       "ingredients": [
-        "Unrefined Nilotica Shea Butter, Cold-Pressed Neem Seed Oil, Pure Tea Tree Oil, Cold-Pressed Jojoba Oil, Beeswax"
+        "100% Raw Unpasteurized Forest Honey, Pure Artisanal Kenyan Bee Propolis Extract (5%)"
       ],
-      "usageInstructions": "Warm a pea-sized quantity between fingertips and gently press into targeted skin areas, elbows, heels, or scalp twice daily.",
-      "price": 1200,
-      "stockQuantity": 20,
-      "categoryId": "cat_oils",
-      "categoryName": "Natural Oils & Balms",
-      "image": "/src/assets/images/product_ashwagandha_tincture_1790820615059.jpg",
-      "isFeatured": false,
+      "usageInstructions": "Take 1 tablespoon directly as needed or stir into warm water with ginger and lemon. (Do not heat above 40°C to preserve live enzymes).",
+      "price": 1650,
+      "stockQuantity": 24,
+      "categoryId": "cat_resins",
+      "categoryName": "Pure Resins & Shilajit",
+      "image": "/src/assets/images/hero_wellness_botanicals_1790820582973.jpg",
+      "isFeatured": true,
       "isActive": true,
-      "createdAt": "2026-09-22T15:00:00.000Z",
+      "createdAt": "2026-09-20T12:00:00.000Z",
+      "updatedAt": "2026-09-30T10:00:00.000Z"
+    },
+    {
+      "id": "prod_ashwagandha_tincture",
+      "name": "Organic Ashwagandha Root Extract (KSM-66)",
+      "slug": "organic-ashwagandha-root-extract",
+      "description": "Full-spectrum dual-extracted adaptogenic elixir prepared from mature organically cultivated Withania somnifera roots. Formulated to help the body adapt to physiological stressors while nurturing calm mental poise and restful sleep patterns.",
+      "benefits": [
+        "Traditionally used to help support the nervous system during demanding periods",
+        "Commonly associated with promoting deeper, more restorative night sleep",
+        "Supports balanced evening cortisol and mindful calm",
+        "Alcohol-free vegetable glycerine base for smooth, soothing flavor"
+      ],
+      "ingredients": [
+        "Organic Ashwagandha (Withania somnifera) Root Extract, Organic Vegetable Glycerine, Purified Spring Water"
+      ],
+      "usageInstructions": "Take 1 to 2 full droppers (approx 1ml) directly under the tongue or stir into a small cup of warm chamomile tea 30 minutes before bedtime.",
+      "price": 2400,
+      "stockQuantity": 14,
+      "categoryId": "cat_tinctures",
+      "categoryName": "Tinctures & Extracts",
+      "image": "/src/assets/images/product_ashwagandha_tincture_1790820615059.jpg",
+      "isFeatured": true,
+      "isActive": true,
+      "createdAt": "2026-09-18T11:00:00.000Z",
+      "updatedAt": "2026-09-30T10:00:00.000Z"
+    },
+    {
+      "id": "prod_moringa_powder",
+      "name": "Kilifi Raw Organic Moringa Leaf Powder",
+      "slug": "kilifi-raw-organic-moringa-leaf-powder",
+      "description": "Hand-picked, shade-dried organic moringa oleifera leaves harvested sustainably from coastal Kilifi smallholder farms. Stone-milled to an ultra-fine vibrant green powder to preserve heat-sensitive enzymes, plant chlorophyll, and essential amino acids.",
+      "benefits": [
+        "Traditionally used as a comprehensive daily plant-based nutritional booster",
+        "Rich natural source of iron, calcium, vitamin A, and plant antioxidants",
+        "Supports daily metabolic wellness and natural immune function",
+        "Gentle digestive nourishment without artificial additives"
+      ],
+      "ingredients": [
+        "100% Certified Organic Kenyan Moringa Oleifera Leaf Powder"
+      ],
+      "usageInstructions": "Mix 1 teaspoon (approx 5g) into fresh juices, smoothies, warm water with lemon, or sprinkle over warm soups and salads.",
+      "price": 950,
+      "stockQuantity": 32,
+      "categoryId": "cat_powders",
+      "categoryName": "Herbal Powders",
+      "image": "/src/assets/images/product_moringa_powder_1790820605379.jpg",
+      "isFeatured": true,
+      "isActive": true,
+      "createdAt": "2026-09-16T09:00:00.000Z",
+      "updatedAt": "2026-09-30T10:00:00.000Z"
+    },
+    {
+      "id": "prod_shilajit_gold",
+      "name": "Pure Himalayan Shilajit Resin (Gold Grade)",
+      "slug": "pure-himalayan-shilajit-resin-gold-grade",
+      "description": "Authentic, purified raw mineral pitch wild-harvested from high-altitude rock fissures. Naturally rich in fulvic acid, humic compounds, and over 84 ionic trace minerals. Traditionally used in Ayurvedic wellness to support sustained energy, mental clarity, and cellular replenishment.",
+      "benefits": [
+        "Commonly associated with supporting healthy energy levels and physical endurance",
+        "Contains naturally occurring fulvic acid to assist nutrient bioavailability",
+        "Traditionally used to support cognitive focus and daily resilience",
+        "Provides bioavailable ionic trace minerals"
+      ],
+      "ingredients": [
+        "100% Purified High-Altitude Himalayan Shilajit Resin (Minimum 65% Fulvic Acid)"
+      ],
+      "usageInstructions": "Dissolve a pea-sized portion (300mg–500mg) using the included measuring stick in warm filtered water, herbal tea, or raw milk. Consume once daily in the morning.",
+      "price": 3800,
+      "stockQuantity": 18,
+      "categoryId": "cat_resins",
+      "categoryName": "Pure Resins & Shilajit",
+      "image": "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
+      "isFeatured": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T08:00:00.000Z",
       "updatedAt": "2026-09-30T10:00:00.000Z"
     }
   ],

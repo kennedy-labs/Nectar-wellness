@@ -1,7 +1,29 @@
 import { Category, Order, Product } from '../types/index.js';
 import { db } from './db.js';
+import { isPostgresReady, postgresDb } from './postgres.js';
 
 export const repository = {
+  // Synchronize memory cache with Neon at startup or refresh
+  async syncFromPostgres(): Promise<void> {
+    if (!isPostgresReady()) return;
+    try {
+      const [pgCategories, pgProducts, pgOrders] = await Promise.all([
+        postgresDb.getAllCategories(),
+        postgresDb.getAllProducts(),
+        postgresDb.getAllOrders(),
+      ]);
+
+      const localData = db.read();
+      if (pgCategories.length > 0) localData.categories = pgCategories;
+      if (pgProducts.length > 0) localData.products = pgProducts;
+      if (pgOrders.length > 0) localData.orders = pgOrders;
+      db.write(localData);
+      console.log('🔄 Repository synchronized from Neon PostgreSQL.');
+    } catch (err: any) {
+      console.warn('⚠️ Could not sync from Neon Postgres:', err.message);
+    }
+  },
+
   // Categories
   findAllCategories(): Category[] {
     return db.read().categories;
@@ -31,6 +53,14 @@ export const repository = {
       data.products.push(product);
     }
     db.write(data);
+
+    // Asynchronously persist to Neon PostgreSQL
+    if (isPostgresReady()) {
+      postgresDb.upsertProduct(product).catch((err) => {
+        console.error('Failed to sync product to Neon:', err.message);
+      });
+    }
+
     return product;
   },
   deleteProduct(id: string): boolean {
@@ -39,6 +69,14 @@ export const repository = {
     if (existingIndex >= 0) {
       data.products.splice(existingIndex, 1);
       db.write(data);
+
+      // Asynchronously delete from Neon PostgreSQL
+      if (isPostgresReady()) {
+        postgresDb.deleteProduct(id).catch((err) => {
+          console.error('Failed to delete product from Neon:', err.message);
+        });
+      }
+
       return true;
     }
     return false;
@@ -62,6 +100,14 @@ export const repository = {
       data.orders.unshift(order);
     }
     db.write(data);
+
+    // Asynchronously persist to Neon PostgreSQL
+    if (isPostgresReady()) {
+      postgresDb.upsertOrder(order).catch((err) => {
+        console.error('Failed to sync order to Neon:', err.message);
+      });
+    }
+
     return order;
   },
 };

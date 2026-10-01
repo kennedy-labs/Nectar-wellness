@@ -1,9 +1,11 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { repository } from './src/server/repository.js';
 import { service } from './src/server/service.js';
+import { initPostgres } from './src/server/postgres.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +13,16 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+  // Initialize and sync with Neon PostgreSQL if configured
+  try {
+    const initialCats = repository.findAllCategories();
+    const initialProds = repository.findAllProducts();
+    await initPostgres(initialCats, initialProds);
+    await repository.syncFromPostgres();
+  } catch (err: any) {
+    console.warn('PostgreSQL initialization skipped/failed:', err.message);
+  }
 
   app.use(express.json());
 
