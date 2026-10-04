@@ -9,7 +9,6 @@ import {
   Truck,
   CheckCircle2,
   Package,
-  Layers,
   ArrowLeft,
   Settings,
   KeyRound,
@@ -512,27 +511,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   }
 
   // -------------------------------------------------------------
-  // WORKSPACE METRICS & KPI COUNTERS
+  // LOGGED IN WORKSPACE
   // -------------------------------------------------------------
-  const pendingDeliveryReviewCount = orders.filter(
-    (o) => o.status === 'REVIEWING_DELIVERY'
+  const pendingRouteReviews = orders.filter(
+    (o) => o.status === 'REVIEWING_DELIVERY' || o.deliveryFee === null
   ).length;
 
-  const awaitingPaymentCount = orders.filter(
+  const awaitingPayment = orders.filter(
     (o) => o.status === 'AWAITING_PAYMENT'
   ).length;
-
-  const activeProcessingCount = orders.filter(
-    (o) => o.status === 'PROCESSING' || o.status === 'OUT_FOR_DELIVERY'
-  ).length;
-
-  const lowStockCount = products.filter(
-    (p) => p.stockQuantity <= 5 && p.isActive
-  ).length;
-
-  const totalRevenue = orders
-    .filter((o) => o.paymentStatus === 'CONFIRMED')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
 
   return (
     <div className="min-h-screen bg-[#F7F9F7] text-[#242A24] flex flex-col">
@@ -553,7 +540,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 </span>
               </div>
               <p className="text-xs text-[#5D6B62]">
-                Apothecary Management & Logistics Console
+                Apothecary Management & Fulfillment Console
               </p>
             </div>
           </div>
@@ -602,66 +589,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
       {/* Main Workspace */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        {/* Metric KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-white border border-[#E2E8E4] shadow-2xs space-y-1">
-            <span className="text-[11px] font-semibold text-[#57685D] uppercase tracking-wide">
-              Route Reviews Needed
-            </span>
-            <div className="text-2xl font-bold font-mono text-[#B45309] tabular-nums">
-              {pendingDeliveryReviewCount}
-            </div>
-            <p className="text-[11px] text-[#697A6E]">Pending transport calculation</p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-white border border-[#E2E8E4] shadow-2xs space-y-1">
-            <span className="text-[11px] font-semibold text-[#57685D] uppercase tracking-wide">
-              Awaiting Payment
-            </span>
-            <div className="text-2xl font-bold font-mono text-[#4A5D4E] tabular-nums">
-              {awaitingPaymentCount}
-            </div>
-            <p className="text-[11px] text-[#697A6E]">Orders awaiting M-Pesa / Bank code</p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-white border border-[#E2E8E4] shadow-2xs space-y-1">
-            <span className="text-[11px] font-semibold text-[#57685D] uppercase tracking-wide">
-              Active Dispatches
-            </span>
-            <div className="text-2xl font-bold font-mono text-[#1E3B2B] tabular-nums">
-              {activeProcessingCount}
-            </div>
-            <p className="text-[11px] text-[#697A6E]">Packaging or with rider / courier</p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-white border border-[#E2E8E4] shadow-2xs space-y-1">
-            <span className="text-[11px] font-semibold text-[#57685D] uppercase tracking-wide">
-              Low Stock Warnings
-            </span>
-            <div className="text-2xl font-bold font-mono text-[#B91C1C] tabular-nums">
-              {lowStockCount}
-            </div>
-            <p className="text-[11px] text-[#697A6E]">5 or fewer items remaining</p>
-          </div>
-        </div>
-
         {/* Tab Navigation */}
         <div className="flex border-b border-[#E2E8E4] space-x-6 text-sm">
           <button
             onClick={() => setActiveTab('ORDERS')}
-            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] ${
+            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] flex items-center gap-2 ${
               activeTab === 'ORDERS'
-                ? 'border-[#20392D] text-[#1A2E23]'
+                ? 'border-[#20392D] text-[#1A2E23] font-semibold'
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
-            Order Processing & Dispatch ({orders.length})
+            <span>Orders Fulfillment ({orders.length})</span>
+            {pendingRouteReviews + awaitingPayment > 0 && (
+              <span className="text-[10px] bg-[#FEF3C7] text-[#92400E] font-bold px-1.5 py-0.2 rounded-full">
+                {pendingRouteReviews + awaitingPayment} pending
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('INVENTORY')}
             className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] ${
               activeTab === 'INVENTORY'
-                ? 'border-[#20392D] text-[#1A2E23]'
+                ? 'border-[#20392D] text-[#1A2E23] font-semibold'
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
@@ -671,7 +620,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             onClick={() => setActiveTab('SETTINGS')}
             className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] ${
               activeTab === 'SETTINGS'
-                ? 'border-[#20392D] text-[#1A2E23]'
+                ? 'border-[#20392D] text-[#1A2E23] font-semibold'
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
@@ -679,9 +628,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </button>
         </div>
 
-        {/* Workspace Active View */}
+        {/* Tab 1: Orders Management & Dedicated Workflow */}
         {activeTab === 'ORDERS' && (
-          <div className="bg-white p-5 rounded-2xl border border-[#E2E8E4] shadow-2xs">
+          <div className="space-y-6">
             <AdminOrderManagement
               orders={orders}
               onUpdateDeliveryFee={onUpdateDeliveryFee}
@@ -691,8 +640,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </div>
         )}
 
+        {/* Tab 2: Inventory */}
         {activeTab === 'INVENTORY' && (
-          <div className="bg-white p-5 rounded-2xl border border-[#E2E8E4] shadow-2xs">
+          <div className="bg-white p-5 rounded-2xl border border-[#E2E8E4] shadow-xs">
             <AdminInventoryTable
               products={products}
               onEditProduct={(p) => {
@@ -711,10 +661,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </div>
         )}
 
+        {/* Tab 3: Settings & Store Owner Management */}
         {activeTab === 'SETTINGS' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Store Owner Credentials Card */}
-            <div className="md:col-span-2 p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-2xs space-y-5">
+            <div className="md:col-span-2 p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0EFEB] pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#EAF0EC] text-[#20392D] flex items-center justify-center shrink-0">
@@ -936,7 +887,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             </div>
 
             {/* M-Pesa Buy Goods Configuration */}
-            <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-2xs space-y-4">
+            <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4">
               <h3 className="font-display font-medium text-base text-[#1A2E23]">
                 M-Pesa Buy Goods Configuration
               </h3>
@@ -963,7 +914,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             </div>
 
             {/* Apothecary Shop Logistics */}
-            <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-2xs space-y-4">
+            <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4">
               <h3 className="font-display font-medium text-base text-[#1A2E23]">
                 Apothecary Shop Logistics
               </h3>
