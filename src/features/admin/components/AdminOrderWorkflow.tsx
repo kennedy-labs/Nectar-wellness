@@ -7,20 +7,17 @@ import {
   Truck,
   CheckCircle2,
   AlertCircle,
-  DollarSign,
-  Package,
   Clock,
   Printer,
-  ChevronRight,
-  ExternalLink,
   ChevronLeft,
+  ChevronRight,
   Send,
-  FileText,
-  Calendar,
-  ShieldCheck,
+  Save,
   Check,
-  Copy,
-  Store,
+  Package,
+  CreditCard,
+  User,
+  ExternalLink,
 } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../../config/constants';
 import { formatDate, formatKES } from '../../../lib/utils';
@@ -37,57 +34,12 @@ interface AdminOrderWorkflowProps {
   onConfirmPayment: (orderId: string, reference: string) => Promise<void>;
 }
 
-type WorkflowTab = 'OVERVIEW' | 'FEE' | 'PAYMENT' | 'PACKAGING' | 'DISPATCH' | 'DELIVERY';
-
-const STAGES: {
-  id: WorkflowTab;
-  stepNumber: number;
-  label: string;
-  description: string;
-  associatedStatus: OrderStatus[];
-}[] = [
-  {
-    id: 'OVERVIEW',
-    stepNumber: 0,
-    label: 'Overview & Slip',
-    description: 'Order details and items breakdown',
-    associatedStatus: [],
-  },
-  {
-    id: 'FEE',
-    stepNumber: 1,
-    label: '1. Route & Fee',
-    description: 'Verify location and set transport cost',
-    associatedStatus: ['REVIEWING_DELIVERY', 'PENDING'],
-  },
-  {
-    id: 'PAYMENT',
-    stepNumber: 2,
-    label: '2. Payment Verification',
-    description: 'Verify M-Pesa Till transaction code',
-    associatedStatus: ['AWAITING_PAYMENT', 'PAID'],
-  },
-  {
-    id: 'PACKAGING',
-    stepNumber: 3,
-    label: '3. Apothecary Packaging',
-    description: 'Fulfill herbal items and dosage guides',
-    associatedStatus: ['PROCESSING'],
-  },
-  {
-    id: 'DISPATCH',
-    stepNumber: 4,
-    label: '4. Dispatch & Logistics',
-    description: 'Handover to rider or countrywide courier',
-    associatedStatus: ['OUT_FOR_DELIVERY'],
-  },
-  {
-    id: 'DELIVERY',
-    stepNumber: 5,
-    label: '5. Completed Delivery',
-    description: 'Customer handover & final sign-off',
-    associatedStatus: ['DELIVERED', 'CANCELLED'],
-  },
+const ORDER_STAGES: { status: OrderStatus; label: string }[] = [
+  { status: 'REVIEWING_DELIVERY', label: '1. Review Route' },
+  { status: 'AWAITING_PAYMENT', label: '2. Payment' },
+  { status: 'PROCESSING', label: '3. Packaging' },
+  { status: 'OUT_FOR_DELIVERY', label: '4. Dispatched' },
+  { status: 'DELIVERED', label: '5. Delivered' },
 ];
 
 export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
@@ -99,925 +51,568 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   onUpdateStatus,
   onConfirmPayment,
 }) => {
-  // Determine initial active tab based on order status
-  const getInitialTab = (): WorkflowTab => {
-    if (order.status === 'REVIEWING_DELIVERY' || order.deliveryFee === null) return 'FEE';
-    if (order.status === 'AWAITING_PAYMENT') return 'PAYMENT';
-    if (order.status === 'PAID') return 'PACKAGING';
-    if (order.status === 'PROCESSING') return 'DISPATCH';
-    if (order.status === 'OUT_FOR_DELIVERY') return 'DELIVERY';
-    if (order.status === 'DELIVERED') return 'OVERVIEW';
-    return 'OVERVIEW';
-  };
-
-  const [activeTab, setActiveTab] = useState<WorkflowTab>(getInitialTab);
-
-  // Form states
+  // Local edit states
   const [deliveryFeeInput, setDeliveryFeeInput] = useState<string>(
     order.deliveryFee !== null ? String(order.deliveryFee) : ''
   );
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(order.status);
   const [paymentRefInput, setPaymentRefInput] = useState<string>(
     order.paymentReference || ''
   );
   const [adminNotesInput, setAdminNotesInput] = useState<string>(
     order.adminNotes || ''
   );
-  const [packedItems, setPackedItems] = useState<Record<string, boolean>>({});
-  const [riderInfo, setRiderInfo] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Sync state when order prop changes
+  const [savingFee, setSavingFee] = useState(false);
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Sync state whenever selected order changes
   useEffect(() => {
     setDeliveryFeeInput(order.deliveryFee !== null ? String(order.deliveryFee) : '');
+    setSelectedStatus(order.status);
     setPaymentRefInput(order.paymentReference || '');
     setAdminNotesInput(order.adminNotes || '');
-    setFeedbackMsg(null);
+    setFeedback(null);
   }, [order.id]);
 
-  // Keyboard navigation: Escape key returns to list
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onBack();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onBack]);
-
-  // Order cycling navigation
+  // Order prev / next navigation
   const currentIndex = allOrders.findIndex((o) => o.id === order.id);
   const prevOrder = currentIndex > 0 ? allOrders[currentIndex - 1] : null;
   const nextOrder = currentIndex < allOrders.length - 1 ? allOrders[currentIndex + 1] : null;
 
-  // Actions
-  const handleSaveFee = async (advance: boolean = false) => {
-    setIsSubmitting(true);
-    setFeedbackMsg(null);
+  // Clean customer phone number for dialing/chatting
+  const cleanPhone = order.customerPhone.replace(/[^0-9]/g, '');
+  const waPhone = cleanPhone.startsWith('0') ? '254' + cleanPhone.slice(1) : cleanPhone;
+
+  // Handlers
+  const handleSaveDeliveryFee = async () => {
+    setSavingFee(true);
+    setFeedback(null);
     try {
       const fee = Number(deliveryFeeInput) || 0;
       await onUpdateDeliveryFee(order.id, fee, adminNotesInput.trim() || undefined);
-      setFeedbackMsg({ type: 'success', text: `Delivery fee set to ${formatKES(fee)}.` });
-      if (advance) {
-        setActiveTab('PAYMENT');
-      }
+      setFeedback({ type: 'success', text: `Delivery fee updated to ${formatKES(fee)}.` });
     } catch {
-      setFeedbackMsg({ type: 'error', text: 'Failed to update delivery fee.' });
+      setFeedback({ type: 'error', text: 'Failed to update delivery fee.' });
     } finally {
-      setIsSubmitting(false);
+      setSavingFee(false);
     }
   };
 
-  const handleConfirmMpesaPayment = async (advance: boolean = false) => {
-    if (!paymentRefInput.trim()) {
-      setFeedbackMsg({ type: 'error', text: 'Please enter the M-Pesa transaction reference.' });
-      return;
-    }
-    setIsSubmitting(true);
-    setFeedbackMsg(null);
-    try {
-      await onConfirmPayment(order.id, paymentRefInput.trim());
-      setFeedbackMsg({ type: 'success', text: 'Payment confirmed & inventory stock updated!' });
-      if (advance) {
-        setActiveTab('PACKAGING');
-      }
-    } catch {
-      setFeedbackMsg({ type: 'error', text: 'Failed to confirm payment.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateStatusAndAdvance = async (newStatus: OrderStatus, nextTab?: WorkflowTab) => {
-    setIsSubmitting(true);
-    setFeedbackMsg(null);
+  const handleUpdateStatus = async (newStatus: OrderStatus) => {
+    setSavingStatus(true);
+    setFeedback(null);
     try {
       await onUpdateStatus(order.id, newStatus, adminNotesInput.trim() || undefined);
-      setFeedbackMsg({ type: 'success', text: `Order status updated to ${newStatus.replace(/_/g, ' ')}.` });
-      if (nextTab) {
-        setActiveTab(nextTab);
-      }
+      setSelectedStatus(newStatus);
+      setFeedback({ type: 'success', text: `Order status changed to ${newStatus.replace(/_/g, ' ')}.` });
     } catch {
-      setFeedbackMsg({ type: 'error', text: 'Failed to update order status.' });
+      setFeedback({ type: 'error', text: 'Failed to update order status.' });
     } finally {
-      setIsSubmitting(false);
+      setSavingStatus(false);
     }
   };
 
-  const handleToggleItemPacked = (itemId: string) => {
-    setPackedItems((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+  const handleConfirmPayment = async () => {
+    if (!paymentRefInput.trim()) {
+      setFeedback({ type: 'error', text: 'Please enter the M-Pesa transaction reference code.' });
+      return;
+    }
+    setSavingPayment(true);
+    setFeedback(null);
+    try {
+      await onConfirmPayment(order.id, paymentRefInput.trim());
+      setFeedback({ type: 'success', text: 'Payment confirmed & stock updated!' });
+    } catch {
+      setFeedback({ type: 'error', text: 'Failed to confirm payment.' });
+    } finally {
+      setSavingPayment(false);
+    }
   };
 
-  const allItemsPacked = order.items.every((it) => packedItems[it.id]);
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    setFeedback(null);
+    try {
+      await onUpdateStatus(order.id, order.status, adminNotesInput.trim() || undefined);
+      setFeedback({ type: 'success', text: 'Admin notes saved successfully.' });
+    } catch {
+      setFeedback({ type: 'error', text: 'Failed to save admin notes.' });
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
-  // Clean WhatsApp phone number for calling
-  const cleanPhone = order.customerPhone.replace(/[^0-9]/g, '');
+  // Determine stage progress step index (0 to 4)
+  const getStageIndex = (st: OrderStatus): number => {
+    switch (st) {
+      case 'PENDING':
+      case 'REVIEWING_DELIVERY':
+        return 0;
+      case 'AWAITING_PAYMENT':
+        return 1;
+      case 'PAID':
+      case 'PROCESSING':
+        return 2;
+      case 'OUT_FOR_DELIVERY':
+        return 3;
+      case 'DELIVERED':
+        return 4;
+      default:
+        return 0;
+    }
+  };
+
+  const currentStageIndex = getStageIndex(order.status);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-5 animate-in fade-in duration-150">
       {/* ------------------------------------------------------------- */}
-      {/* TOP WORKFLOW MASTER NAVIGATION BAR */}
+      {/* 1. TOP HEADER & NAVIGATION BAR */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-white rounded-2xl border border-[#E2E6E3] shadow-xs p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F0F4F1] hover:bg-[#E2ECE5] text-xs font-medium text-[#1E3B2F] transition-colors cursor-pointer"
-              title="Return to order list (Esc)"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>All Orders</span>
-            </button>
+      <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F0F4F1] hover:bg-[#E2ECE5] text-xs font-semibold text-[#1E3B2F] transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Orders</span>
+          </button>
 
-            <div className="h-4 w-[1px] bg-[#E2E6E3] hidden sm:block" />
-
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-base sm:text-lg text-[#1A2E23]">
-                  #{order.id}
-                </span>
-                <span aria-hidden="true" className="text-[#8B988F]">·</span>
-                <span className="font-medium text-sm text-[#26382E]">
-                  {order.customerName}
-                </span>
-              </div>
-              <p className="text-xs text-[#637267] flex items-center gap-2">
-                <span>Placed {formatDate(order.createdAt)}</span>
-                <span aria-hidden="true">·</span>
-                <span>{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
-              </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-mono font-bold text-lg sm:text-xl text-[#1A2E23]">
+                #{order.id}
+              </h2>
+              <span className="text-[#8B988F]">·</span>
+              <span className="font-semibold text-sm sm:text-base text-[#26382E]">
+                {order.customerName}
+              </span>
             </div>
-          </div>
-
-          {/* Quick Order Actions & Status Indicator */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Status Indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F6F8F6] border border-[#E2E6E3] text-xs font-semibold text-[#1F372C]">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  order.status === 'DELIVERED'
-                    ? 'bg-[#15803D]'
-                    : order.status === 'CANCELLED'
-                    ? 'bg-[#B91C1C]'
-                    : order.status === 'PAID' || order.status === 'PROCESSING'
-                    ? 'bg-[#2563EB]'
-                    : order.status === 'OUT_FOR_DELIVERY'
-                    ? 'bg-[#7C3AED]'
-                    : 'bg-[#D97706]'
-                }`}
-              />
-              <span>{order.status.replace(/_/g, ' ')}</span>
-            </div>
-
-            {/* Quick Call */}
-            <a
-              href={`tel:${order.customerPhone}`}
-              className="p-2 rounded-xl bg-[#F0F4F1] hover:bg-[#E2ECE5] text-[#245C38] transition-colors cursor-pointer text-xs flex items-center gap-1.5 font-medium"
-              title="Call customer directly"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Call</span>
-            </a>
-
-            {/* Quick WhatsApp */}
-            <a
-              href={`https://wa.me/${cleanPhone.startsWith('0') ? '254' + cleanPhone.slice(1) : cleanPhone}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-xl bg-[#E8F5E9] hover:bg-[#D5ECD7] text-[#1B5E20] transition-colors cursor-pointer text-xs flex items-center gap-1.5 font-medium"
-              title="Chat on WhatsApp"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">WhatsApp</span>
-            </a>
-
-            {/* Order Prev/Next Navigation */}
-            <div className="flex items-center gap-1 border-l border-[#E2E6E3] pl-2.5">
-              <button
-                disabled={!prevOrder}
-                onClick={() => prevOrder && onSelectOrder(prevOrder)}
-                className="p-1.5 rounded-lg text-[#556358] hover:text-[#182C22] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                title="Previous order"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                disabled={!nextOrder}
-                onClick={() => nextOrder && onSelectOrder(nextOrder)}
-                className="p-1.5 rounded-lg text-[#556358] hover:text-[#182C22] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                title="Next order"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <p className="text-xs text-[#5D6B62]">
+              Placed on {formatDate(order.createdAt)}
+            </p>
           </div>
         </div>
 
-        {/* ------------------------------------------------------------- */}
-        {/* WORKFLOW PIPELINE STAGE NAVIGATION BAR (Tabs / Stepper) */}
-        {/* ------------------------------------------------------------- */}
-        <div className="pt-2 border-t border-[#EEF2EF]">
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1">
-            {STAGES.map((stage) => {
-              const isActive = activeTab === stage.id;
-              const isCurrentOrderStatus = stage.associatedStatus.includes(order.status);
-              return (
-                <button
-                  key={stage.id}
-                  onClick={() => {
-                    setActiveTab(stage.id);
-                    setFeedbackMsg(null);
-                  }}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
-                    isActive
-                      ? 'bg-[#1E3B2F] text-white shadow-xs font-semibold'
-                      : isCurrentOrderStatus
-                      ? 'bg-[#EBF5EF] text-[#245C38] hover:bg-[#DCEEE3]'
-                      : 'text-[#5C6E62] hover:text-[#182C22] hover:bg-[#F2F5F2]'
-                  }`}
-                >
-                  {isCurrentOrderStatus && !isActive && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#15803D]" />
-                  )}
-                  <span>{stage.label}</span>
-                </button>
-              );
-            })}
+        {/* Action Buttons: Prev/Next & Print */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.print()}
+            className="px-3 py-2 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Print packing slip"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Print Slip</span>
+          </button>
+
+          <div className="flex items-center border border-[#D5D3CA] rounded-xl overflow-hidden bg-white">
+            <button
+              disabled={!prevOrder}
+              onClick={() => prevOrder && onSelectOrder(prevOrder)}
+              className="p-2 text-[#4E5C52] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              title="Previous order"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="w-[1px] h-4 bg-[#E2E6E3]" />
+            <button
+              disabled={!nextOrder}
+              onClick={() => nextOrder && onSelectOrder(nextOrder)}
+              className="p-2 text-[#4E5C52] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              title="Next order"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
+      {/* ------------------------------------------------------------- */}
+      {/* 2. ORDER PROGRESS TIMELINE (Clear 5-Step Bar) */}
+      {/* ------------------------------------------------------------- */}
+      <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between text-xs text-[#5C6E62]">
+          <span className="font-semibold uppercase tracking-wider text-[#3D4C42] text-[11px]">
+            Order Lifecycle Progress
+          </span>
+          <span className="font-medium text-[#1A2E23]">
+            Current: <strong className="text-[#245C38]">{order.status.replace(/_/g, ' ')}</strong>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2 sm:gap-4 pt-1">
+          {ORDER_STAGES.map((stage, idx) => {
+            const isCompleted = idx < currentStageIndex;
+            const isCurrent = idx === currentStageIndex;
+            return (
+              <button
+                key={stage.status}
+                type="button"
+                onClick={() => handleUpdateStatus(stage.status)}
+                className={`text-left p-2 sm:p-2.5 rounded-xl border transition-all cursor-pointer ${
+                  isCurrent
+                    ? 'border-[#245C38] bg-[#EBF5EF] shadow-2xs'
+                    : isCompleted
+                    ? 'border-[#C5E1CF] bg-[#F4F9F6]'
+                    : 'border-[#E6E4DD] bg-[#FAFAF8] opacity-70 hover:opacity-100'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span
+                    className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                      isCurrent
+                        ? 'bg-[#20392D] text-white'
+                        : isCompleted
+                        ? 'bg-[#15803D] text-white'
+                        : 'bg-[#DCDCD5] text-[#4F5B53]'
+                    }`}
+                  >
+                    {isCompleted ? '✓' : idx + 1}
+                  </span>
+                  <span
+                    className={`text-xs font-semibold truncate ${
+                      isCurrent ? 'text-[#1E3B2F]' : isCompleted ? 'text-[#15803D]' : 'text-[#5C6E62]'
+                    }`}
+                  >
+                    {stage.label.split('. ')[1]}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Global Action Feedback Message */}
-      {feedbackMsg && (
+      {feedback && (
         <div
-          className={`p-3.5 rounded-2xl text-xs flex items-center gap-2 animate-in fade-in duration-150 ${
-            feedbackMsg.type === 'success'
+          className={`p-3.5 rounded-xl text-xs flex items-center gap-2 ${
+            feedback.type === 'success'
               ? 'bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]'
               : 'bg-[#FDF2F2] text-[#9B1C1C] border border-[#F8D7D7]'
           }`}
         >
-          {feedbackMsg.type === 'success' ? (
+          {feedback.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 shrink-0 text-[#245C38]" />
           ) : (
             <AlertCircle className="w-4 h-4 shrink-0 text-[#9B1C1C]" />
           )}
-          <span>{feedbackMsg.text}</span>
+          <span>{feedback.text}</span>
         </div>
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* ISOLATED STAGE WORKSPACES */}
+      {/* 3. MAIN WORKSPACE (Two-Column Layout) */}
       {/* ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Focused Workflow Stage Controller */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* ========================================================= */}
-          {/* TAB 1: OVERVIEW & AUDIT SLIP */}
-          {/* ========================================================= */}
-          {activeTab === 'OVERVIEW' && (
-            <div className="bg-white p-6 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-6">
-              <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-4">
-                <div>
-                  <h3 className="font-display font-medium text-base text-[#182C22]">
-                    Order Overview & Fulfillment Summary
-                  </h3>
-                  <p className="text-xs text-[#5D6B62]">
-                    Complete record of customer, items, and logistics details.
-                  </p>
-                </div>
-                <button
-                  onClick={() => window.print()}
-                  className="px-3 py-1.5 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print Slip</span>
-                </button>
-              </div>
-
-              {/* Customer & Delivery Method Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] space-y-2">
-                  <span className="font-semibold uppercase tracking-wider text-[#526357] text-[11px] block">
-                    Customer Information
-                  </span>
-                  <div className="space-y-1">
-                    <p className="font-medium text-[#1A2E23] text-sm">{order.customerName}</p>
-                    <p className="text-[#4E5C52]">{order.customerPhone}</p>
-                    {order.customerEmail && <p className="text-[#4E5C52]">{order.customerEmail}</p>}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] space-y-2">
-                  <span className="font-semibold uppercase tracking-wider text-[#526357] text-[11px] block">
-                    Delivery Logistics
-                  </span>
-                  <div className="space-y-1">
-                    <p className="font-medium text-[#1A2E23]">
-                      Method: {order.deliveryMethod.replace(/_/g, ' ')}
-                    </p>
-                    <p className="text-[#4E5C52] flex items-start gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#245C38] shrink-0 mt-0.5" />
-                      <span>{order.deliveryLocation}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {order.orderNotes && (
-                <div className="p-3.5 rounded-xl bg-[#FEF9E7] border border-[#F9E79F] text-xs text-[#7D6608]">
-                  <strong>Customer Instructions:</strong> {order.orderNotes}
-                </div>
-              )}
-
-              {/* Items Table */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-xs uppercase tracking-wider text-[#4E5C52]">
-                  Purchased Apothecary Remedies ({order.items.length})
-                </h4>
-                <div className="divide-y divide-[#F0EFEB] border border-[#E8ECE9] rounded-xl overflow-hidden">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="p-3.5 flex items-center justify-between text-xs bg-white">
-                      <div className="flex items-center gap-3">
-                        {item.productImage && (
-                          <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="w-10 h-10 rounded-lg object-cover border border-[#E8ECE9]"
-                          />
-                        )}
-                        <div>
-                          <p className="font-medium text-[#182C22]">{item.productName}</p>
-                          <p className="text-[#64746A]">
-                            Qty: <strong className="text-[#1A2E23]">{item.quantity}</strong> × {formatKES(item.priceAtPurchase)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="font-mono font-semibold text-sm text-[#1A2E23] tabular-nums">
-                        {formatKES(item.priceAtPurchase * item.quantity)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Financial Calculation */}
-              <div className="p-4 rounded-xl bg-[#F6F8F6] border border-[#E2E8E4] space-y-2 text-xs">
-                <div className="flex justify-between text-[#556358]">
-                  <span>Products Subtotal:</span>
-                  <span className="font-mono font-medium text-[#1A2E23]">{formatKES(order.subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-[#556358]">
-                  <span>Delivery & Courier Transport:</span>
-                  <span className="font-mono font-medium text-[#1A2E23]">
-                    {order.deliveryFee !== null ? formatKES(order.deliveryFee) : 'Pending Review'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold border-t border-[#DDE4DF] pt-2 text-[#1A2E23]">
-                  <span>Total Order Amount:</span>
-                  <span className="font-mono text-base text-[#1E3B2F]">{formatKES(order.totalAmount)}</span>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Left / Main Column (Items, Pricing, Payment, Status) */}
+        <div className="lg:col-span-8 space-y-5">
+          {/* Card 1: Items Ordered & Financials */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-3">
+              <h3 className="font-display font-medium text-base text-[#182C22]">
+                Items Ordered ({order.items.length})
+              </h3>
+              <span className="text-xs text-[#5D6B62]">
+                Subtotal: <strong className="text-[#182C22]">{formatKES(order.subtotal)}</strong>
+              </span>
             </div>
-          )}
 
-          {/* ========================================================= */}
-          {/* TAB 2: STEP 1 — ROUTE REVIEW & DELIVERY FEE */}
-          {/* ========================================================= */}
-          {activeTab === 'FEE' && (
-            <div className="bg-white p-6 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-6">
-              <div className="border-b border-[#F0EFEB] pb-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#B45309] uppercase tracking-wider mb-1">
-                  <span>Step 1 of 5</span>
-                  <span>·</span>
-                  <span>Logistics Calculation</span>
-                </div>
-                <h3 className="font-display font-medium text-lg text-[#182C22]">
-                  Review Route & Set Delivery Fee
-                </h3>
-                <p className="text-xs text-[#5D6B62]">
-                  Verify customer destination and set the final delivery cost before requesting payment.
-                </p>
-              </div>
-
-              {/* Customer Location Card */}
-              <div className="p-4 rounded-xl bg-[#F8FAF8] border border-[#E6ECE8] text-xs space-y-2">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-[#245C38] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-[#182C22] block">Destination:</span>
-                    <span className="text-[#3A4B3F] text-sm font-medium">{order.deliveryLocation}</span>
+            {/* Items List */}
+            <div className="divide-y divide-[#F2F0EA]">
+              {order.items.map((item) => (
+                <div key={item.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    {item.productImage && (
+                      <img
+                        src={item.productImage}
+                        alt={item.productName}
+                        className="w-12 h-12 rounded-xl object-cover border border-[#E8ECE9]"
+                      />
+                    )}
+                    <div>
+                      <p className="font-semibold text-[#182C22] text-sm">{item.productName}</p>
+                      <p className="text-[#64746A]">
+                        {item.quantity} × {formatKES(item.priceAtPurchase)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="font-mono font-bold text-sm text-[#1A2E23] tabular-nums">
+                    {formatKES(item.priceAtPurchase * item.quantity)}
                   </div>
                 </div>
-                <div className="text-[11px] text-[#5C6E62] pl-6">
-                  Selected Method: <strong className="text-[#1A2E23]">{order.deliveryMethod.replace(/_/g, ' ')}</strong>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Quick Preset Buttons */}
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-[#3A463D]">
-                  Quick Standard Rates (Nairobi & Countrywide):
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { label: 'Shop Pickup (Free)', fee: 0 },
-                    { label: 'Nairobi CBD / Local (KES 200)', fee: 200 },
-                    { label: 'Nairobi Outskirts (KES 350)', fee: 350 },
-                    { label: 'Countrywide Parcel (KES 450)', fee: 450 },
-                  ].map((preset) => (
+            {/* Delivery Fee & Total Calculation */}
+            <div className="p-4 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] space-y-3 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#29362D] mb-1">
+                    Delivery Transport Fee (KSh)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-36">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#7A877E]">
+                        KES
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={deliveryFeeInput}
+                        onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                        placeholder="0"
+                        className="w-full pl-11 pr-2.5 py-1.5 text-xs bg-white border border-[#D5D3CA] rounded-lg outline-none font-mono font-medium focus:border-[#20392D]"
+                      />
+                    </div>
                     <button
-                      key={preset.fee}
                       type="button"
-                      onClick={() => setDeliveryFeeInput(String(preset.fee))}
-                      className={`p-2.5 rounded-xl border text-xs text-left transition-all cursor-pointer ${
-                        deliveryFeeInput === String(preset.fee)
-                          ? 'border-[#20392D] bg-[#EBF5EF] font-semibold text-[#182C22]'
-                          : 'border-[#DCDAD2] hover:border-[#20392D] text-[#4E5C52]'
-                      }`}
+                      disabled={savingFee}
+                      onClick={handleSaveDeliveryFee}
+                      className="px-3 py-1.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                     >
-                      {preset.label}
+                      {savingFee ? 'Saving...' : 'Save Fee'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] text-[#64746A]">Presets:</span>
+                  {[
+                    { label: 'Free (0)', fee: 0 },
+                    { label: 'Rider (200)', fee: 200 },
+                    { label: 'Outskirts (350)', fee: 350 },
+                    { label: 'Countrywide (450)', fee: 450 },
+                  ].map((p) => (
+                    <button
+                      key={p.fee}
+                      type="button"
+                      onClick={() => setDeliveryFeeInput(String(p.fee))}
+                      className="px-2 py-1 text-[11px] rounded-md bg-white border border-[#DCDAD2] hover:border-[#20392D] text-[#3D4C42] cursor-pointer"
+                    >
+                      {p.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Custom Fee Input */}
-              <div className="space-y-1.5 max-w-xs">
-                <label className="block text-xs font-medium text-[#3A463D]">
-                  Agreed Delivery Fee (KSh)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#7A877E] font-mono">
-                    KES
+              {/* Total Summary */}
+              <div className="border-t border-[#E2E8E4] pt-2 flex items-center justify-between text-xs">
+                <span className="text-[#556358]">Products ({formatKES(order.subtotal)}) + Delivery ({order.deliveryFee !== null ? formatKES(order.deliveryFee) : 'KSh 0'})</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm text-[#182C22]">Total Due:</span>
+                  <span className="font-mono font-bold text-lg text-[#1E3B2F] tabular-nums">
+                    {formatKES(order.totalAmount)}
                   </span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={deliveryFeeInput}
-                    onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                    placeholder="Enter transport fee"
-                    className="w-full pl-12 pr-3 py-2.5 text-xs bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none font-mono text-[#182C22]"
-                  />
                 </div>
-              </div>
-
-              {/* WhatsApp Notification Action */}
-              <div className="p-4 rounded-xl bg-[#EBF5EF] border border-[#C5E1CF] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#245C38] flex items-center gap-1.5">
-                    <MessageCircle className="w-4 h-4 text-[#245C38]" />
-                    WhatsApp Customer Notification
-                  </span>
-                  <a
-                    href={buildAdminCustomerWhatsAppUrl(
-                      { ...order, deliveryFee: Number(deliveryFeeInput) || 0, totalAmount: order.subtotal + (Number(deliveryFeeInput) || 0) },
-                      'DELIVERY_QUOTE'
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-[#1B5E20] hover:bg-[#144718] text-white text-xs font-medium rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Send Quote via WhatsApp</span>
-                  </a>
-                </div>
-                <p className="text-[11px] text-[#3B664B]">
-                  Pre-fills a polite message with products subtotal, the calculated transport fee, and M-Pesa Buy Goods payment instructions.
-                </p>
-              </div>
-
-              {/* Action Advancement Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#F0EFEB]">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleSaveFee(false)}
-                  className="px-4 py-2.5 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] transition-colors cursor-pointer"
-                >
-                  Save Fee Only
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleSaveFee(true)}
-                  className="px-5 py-2.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
-                >
-                  <span>Confirm Fee & Advance to Payment</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* ========================================================= */}
-          {/* TAB 3: STEP 2 — PAYMENT VERIFICATION */}
-          {/* ========================================================= */}
-          {activeTab === 'PAYMENT' && (
-            <div className="bg-white p-6 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-6">
-              <div className="border-b border-[#F0EFEB] pb-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#2563EB] uppercase tracking-wider mb-1">
-                  <span>Step 2 of 5</span>
-                  <span>·</span>
-                  <span>Financial Confirmation</span>
+          {/* Card 2: Status & Payment Control */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
+            <h3 className="font-display font-medium text-base text-[#182C22] border-b border-[#F0EFEB] pb-3">
+              Payment & Status Control
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Change Status Dropdown */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#29362D]">
+                  Current Order Status
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
+                    className="flex-1 px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D] font-medium text-[#182C22]"
+                  >
+                    <option value="REVIEWING_DELIVERY">1. Reviewing Route & Delivery</option>
+                    <option value="AWAITING_PAYMENT">2. Awaiting Payment</option>
+                    <option value="PAID">3. Payment Confirmed (Paid)</option>
+                    <option value="PROCESSING">4. Packaging Order</option>
+                    <option value="OUT_FOR_DELIVERY">5. Out for Delivery</option>
+                    <option value="DELIVERED">6. Delivered</option>
+                    <option value="CANCELLED">7. Cancelled</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    disabled={savingStatus || selectedStatus === order.status}
+                    onClick={() => handleUpdateStatus(selectedStatus)}
+                    className="px-3.5 py-2 bg-[#20392D] hover:bg-[#162920] disabled:bg-[#8F9E94] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer"
+                  >
+                    {savingStatus ? 'Updating...' : 'Update'}
+                  </button>
                 </div>
-                <h3 className="font-display font-medium text-lg text-[#182C22]">
-                  Verify M-Pesa Payment
-                </h3>
-                <p className="text-xs text-[#5D6B62]">
-                  Match the customer's transaction code against your official Buy Goods Till.
-                </p>
               </div>
 
-              {/* Store M-Pesa Details */}
-              <div className="p-4 rounded-xl bg-[#F6F8F6] border border-[#E2E8E4] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <span className="text-[#64746A] block mb-0.5">M-Pesa Buy Goods Till:</span>
-                  <strong className="font-mono text-sm text-[#1A2E23]">{BUSINESS_CONFIG.mpesaTill}</strong>
-                </div>
-                <div>
-                  <span className="text-[#64746A] block mb-0.5">Expected Amount:</span>
-                  <strong className="font-mono text-sm text-[#1E3B2F]">{formatKES(order.totalAmount)}</strong>
-                </div>
-                <div>
-                  <span className="text-[#64746A] block mb-0.5">Payment Status:</span>
+              {/* M-Pesa Payment Verification */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#29362D] flex items-center justify-between">
+                  <span>M-Pesa Buy Goods Till ({BUSINESS_CONFIG.mpesaTill})</span>
                   <span
-                    className={`font-semibold ${
-                      order.paymentStatus === 'CONFIRMED' ? 'text-[#15803D]' : 'text-[#B45309]'
+                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                      order.paymentStatus === 'CONFIRMED'
+                        ? 'bg-[#EBF5EF] text-[#15803D]'
+                        : 'bg-[#FEF3C7] text-[#92400E]'
                     }`}
                   >
-                    {order.paymentStatus === 'CONFIRMED' ? '✓ CONFIRMED' : '⏳ AWAITING VERIFICATION'}
+                    {order.paymentStatus === 'CONFIRMED' ? '✓ CONFIRMED' : '⏳ UNPAID'}
                   </span>
-                </div>
-              </div>
+                </label>
 
-              {/* Transaction Code Form */}
-              <div className="space-y-4 max-w-md">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-[#3A463D]">
-                    M-Pesa Confirmation Reference Code
-                  </label>
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={paymentRefInput}
                     onChange={(e) => setPaymentRefInput(e.target.value.toUpperCase())}
-                    placeholder="e.g. QJK8912P4"
-                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none font-mono uppercase tracking-wider text-[#182C22]"
+                    placeholder="Enter M-Pesa Code (e.g. QJK8912P4)"
+                    className="flex-1 px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono uppercase tracking-wider text-[#182C22]"
                   />
-                  <p className="text-[11px] text-[#637267]">
-                    Confirming payment automatically decrements product stock from your apothecary inventory.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    disabled={isSubmitting || !paymentRefInput.trim()}
-                    onClick={() => handleConfirmMpesaPayment(false)}
-                    className="px-4 py-2.5 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] transition-colors cursor-pointer disabled:opacity-50"
+                    disabled={savingPayment || !paymentRefInput.trim()}
+                    onClick={handleConfirmPayment}
+                    className="px-3 py-2 bg-[#15803D] hover:bg-[#126631] disabled:bg-[#8F9E94] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer"
                   >
-                    Save Code Only
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isSubmitting || !paymentRefInput.trim()}
-                    onClick={() => handleConfirmMpesaPayment(true)}
-                    className="px-5 py-2.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs disabled:opacity-50"
-                  >
-                    <span>Confirm Payment & Advance to Packing</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* WhatsApp Receipt Acknowledgment */}
-              {order.paymentStatus === 'CONFIRMED' && (
-                <div className="p-4 rounded-xl bg-[#EBF5EF] border border-[#C5E1CF] flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-[#245C38] block">Payment Acknowledgment</span>
-                    <span className="text-[#3B664B] text-[11px]">Send customer an instant payment receipt via WhatsApp.</span>
-                  </div>
-                  <a
-                    href={buildAdminCustomerWhatsAppUrl(order, 'PAYMENT_CONFIRMED')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-[#1B5E20] hover:bg-[#144718] text-white text-xs font-medium rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Send Receipt</span>
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 4: STEP 3 — APOTHECARY PACKAGING */}
-          {/* ========================================================= */}
-          {activeTab === 'PACKAGING' && (
-            <div className="bg-white p-6 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-6">
-              <div className="border-b border-[#F0EFEB] pb-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#7C3AED] uppercase tracking-wider mb-1">
-                  <span>Step 3 of 5</span>
-                  <span>·</span>
-                  <span>Physical Fulfillment</span>
-                </div>
-                <h3 className="font-display font-medium text-lg text-[#182C22]">
-                  Package Herbal Wellness Remedies
-                </h3>
-                <p className="text-xs text-[#5D6B62]">
-                  Check off each botanical item as it is safely sealed into the apothecary package.
-                </p>
-              </div>
-
-              {/* Checklist */}
-              <div className="space-y-3">
-                <label className="block text-xs font-semibold text-[#3A463D] uppercase tracking-wide">
-                  Item Pack Checklist ({Object.values(packedItems).filter(Boolean).length}/{order.items.length} Ready):
-                </label>
-                <div className="space-y-2">
-                  {order.items.map((it) => {
-                    const isPacked = Boolean(packedItems[it.id]);
-                    return (
-                      <div
-                        key={it.id}
-                        onClick={() => handleToggleItemPacked(it.id)}
-                        className={`p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
-                          isPacked
-                            ? 'bg-[#F2F7F4] border-[#245C38] text-[#1A2E23]'
-                            : 'bg-white border-[#E2E6E3] text-[#3D4C42] hover:border-[#20392D]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
-                              isPacked ? 'bg-[#20392D] text-white' : 'border border-[#C2C9C4] bg-white'
-                            }`}
-                          >
-                            {isPacked && <Check className="w-3.5 h-3.5" />}
-                          </div>
-                          <div>
-                            <span className="font-medium text-xs block">{it.productName}</span>
-                            <span className="text-[11px] text-[#64746A]">
-                              Quantity: <strong>{it.quantity}</strong> jar/pouch
-                            </span>
-                          </div>
-                        </div>
-
-                        <span className="text-xs font-mono font-medium">
-                          {isPacked ? '✓ Packed' : 'Pending'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Packaging Quality Assurance */}
-              <div className="p-4 rounded-xl bg-[#F8FAF8] border border-[#E6ECE8] text-xs text-[#425447] space-y-1.5">
-                <strong className="block font-semibold text-[#182C22]">🌿 Apothecary Packing Standards:</strong>
-                <p>• Include measuring spoon for resins/powders (Shilajit, Moringa, Ashwagandha).</p>
-                <p>• Verify seal integrity and batch number.</p>
-                <p>• Insert herbal usage and safety guide leaflet.</p>
-              </div>
-
-              {/* Action Button */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#F0EFEB]">
-                <button
-                  type="button"
-                  onClick={() => handleUpdateStatusAndAdvance('PROCESSING', undefined)}
-                  className="px-4 py-2.5 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] cursor-pointer"
-                >
-                  Save as Packaging
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleUpdateStatusAndAdvance('PROCESSING', 'DISPATCH')}
-                  className="px-5 py-2.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
-                >
-                  <span>Packaging Ready → Advance to Dispatch</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 5: STEP 4 — DISPATCH & TRANSPORT */}
-          {/* ========================================================= */}
-          {activeTab === 'DISPATCH' && (
-            <div className="bg-white p-6 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-6">
-              <div className="border-b border-[#F0EFEB] pb-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#D97706] uppercase tracking-wider mb-1">
-                  <span>Step 4 of 5</span>
-                  <span>·</span>
-                  <span>Logistics Handover</span>
-                </div>
-                <h3 className="font-display font-medium text-lg text-[#182C22]">
-                  Dispatch Package to Rider / Courier
-                </h3>
-                <p className="text-xs text-[#5D6B62]">
-                  Assign carrier transport and alert customer that their wellness order is on the way.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                    Courier / Rider Handover Notes
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={adminNotesInput}
-                    onChange={(e) => setAdminNotesInput(e.target.value)}
-                    placeholder="e.g. Bolt Rider John (0712345678) dispatched. Estimated arrival 45 mins."
-                    className="w-full p-3 text-xs bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#182C22]"
-                  />
-                </div>
-
-                {/* Instant WhatsApp Dispatch Notice */}
-                <div className="p-4 rounded-xl bg-[#EBF5EF] border border-[#C5E1CF] flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-[#245C38] block">WhatsApp Dispatch Alert</span>
-                    <span className="text-[#3B664B] text-[11px]">Notify customer their rider/courier is moving.</span>
-                  </div>
-                  <a
-                    href={buildAdminCustomerWhatsAppUrl(order, 'DISPATCHED')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-[#1B5E20] hover:bg-[#144718] text-white text-xs font-medium rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Send Dispatch WhatsApp</span>
-                  </a>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-[#F0EFEB]">
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => handleUpdateStatusAndAdvance('OUT_FOR_DELIVERY', undefined)}
-                    className="px-4 py-2.5 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] cursor-pointer"
-                  >
-                    Save Dispatch Notes
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => handleUpdateStatusAndAdvance('OUT_FOR_DELIVERY', 'DELIVERY')}
-                    className="px-5 py-2.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
-                  >
-                    <span>Mark Out for Delivery → Advance</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    {savingPayment ? 'Saving...' : 'Confirm'}
                   </button>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* ========================================================= */}
-          {/* TAB 6: STEP 5 — FINAL DELIVERY & SIGN-OFF */}
-          {/* ========================================================= */}
-          {activeTab === 'DELIVERY' && (
-            <div className="bg-white p-6 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-6">
-              <div className="border-b border-[#F0EFEB] pb-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#15803D] uppercase tracking-wider mb-1">
-                  <span>Step 5 of 5</span>
-                  <span>·</span>
-                  <span>Fulfillment Completion</span>
-                </div>
-                <h3 className="font-display font-medium text-lg text-[#182C22]">
-                  Confirm Successful Delivery
-                </h3>
-                <p className="text-xs text-[#5D6B62]">
-                  Customer received package in good condition. Order lifecycle completed.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#F6F8F6] border border-[#E2E8E4] text-xs space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-[#64746A]">Customer:</span>
-                  <span className="font-semibold text-[#182C22]">{order.customerName} ({order.customerPhone})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64746A]">Destination:</span>
-                  <span className="text-[#182C22]">{order.deliveryLocation}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#64746A]">Payment Reference:</span>
-                  <span className="font-mono font-semibold text-[#1E3B2F]">{order.paymentReference || 'N/A'}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-[#F0EFEB]">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleUpdateStatusAndAdvance('CANCELLED', 'OVERVIEW')}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-[#9B1C1C] hover:bg-[#FDF2F2] border border-[#F8D7D7] transition-colors cursor-pointer"
-                >
-                  Cancel Order
-                </button>
-
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleUpdateStatusAndAdvance('DELIVERED', 'OVERVIEW')}
-                  className="px-6 py-2.5 bg-[#15803D] hover:bg-[#126631] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Mark Order as Delivered & Archive</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ------------------------------------------------------------- */}
-        {/* Right Column: Order Context Panel (Always visible) */}
-        {/* ------------------------------------------------------------- */}
-        <div className="lg:col-span-4 space-y-5">
-          {/* Order Summary Snapshot */}
-          <div className="bg-white p-5 rounded-2xl border border-[#E2E6E3] shadow-xs space-y-4">
-            <h4 className="font-display font-medium text-sm text-[#182C22] border-b border-[#F0EFEB] pb-2">
-              Fulfillment Summary
-            </h4>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-[#5C6E62]">
-                <span>Order Status:</span>
-                <strong className="text-[#1A2E23]">{order.status.replace(/_/g, ' ')}</strong>
-              </div>
-              <div className="flex justify-between text-[#5C6E62]">
-                <span>Payment:</span>
-                <span className={`font-semibold ${order.paymentStatus === 'CONFIRMED' ? 'text-[#15803D]' : 'text-[#B45309]'}`}>
-                  {order.paymentStatus}
-                </span>
-              </div>
-              <div className="flex justify-between text-[#5C6E62]">
-                <span>Items:</span>
-                <span className="font-mono text-[#1A2E23]">{order.items.length} items</span>
-              </div>
-              <div className="flex justify-between text-[#5C6E62]">
-                <span>Total Value:</span>
-                <strong className="font-mono text-[#1E3B2F] text-sm">{formatKES(order.totalAmount)}</strong>
-              </div>
-            </div>
-
-            {/* Internal Admin Notes */}
+            {/* Internal Staff Notes */}
             <div className="space-y-1.5 pt-2 border-t border-[#F0EFEB]">
-              <label className="block text-[11px] font-semibold text-[#3A463D] uppercase tracking-wide">
-                Admin Notes:
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-[#29362D]">
+                  Internal Fulfillment & Courier Notes
+                </label>
+                <button
+                  type="button"
+                  disabled={savingNotes}
+                  onClick={handleSaveNotes}
+                  className="text-xs font-medium text-[#245C38] hover:underline cursor-pointer"
+                >
+                  {savingNotes ? 'Saving...' : 'Save Notes'}
+                </button>
+              </div>
               <textarea
                 rows={2}
                 value={adminNotesInput}
                 onChange={(e) => setAdminNotesInput(e.target.value)}
-                placeholder="Add internal notes for staff/courier..."
+                placeholder="e.g. Bolt Rider John (0712345678) assigned. Pack with extra dosing spoon."
                 className="w-full p-2.5 text-xs bg-[#F8FAF8] border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D]"
               />
             </div>
           </div>
+        </div>
 
-          {/* Quick WhatsApp Helper */}
-          <div className="bg-[#EBF5EF] p-4 rounded-2xl border border-[#C5E1CF] text-xs space-y-2">
-            <div className="flex items-center gap-1.5 font-semibold text-[#245C38]">
-              <MessageCircle className="w-4 h-4 text-[#245C38]" />
-              <span>Customer Communications</span>
+        {/* Right Column: Customer Details & 1-Click WhatsApp Messages */}
+        <div className="lg:col-span-4 space-y-5">
+          {/* Card 3: Customer Details */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
+            <h3 className="font-display font-medium text-base text-[#182C22] border-b border-[#F0EFEB] pb-3">
+              Customer Information
+            </h3>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <span className="text-[#64746A] block mb-0.5">Customer Name:</span>
+                <span className="font-semibold text-sm text-[#182C22]">{order.customerName}</span>
+              </div>
+
+              <div>
+                <span className="text-[#64746A] block mb-0.5">Phone Number:</span>
+                <span className="font-mono text-sm text-[#182C22]">{order.customerPhone}</span>
+                <div className="flex items-center gap-2 mt-2">
+                  <a
+                    href={`tel:${order.customerPhone}`}
+                    className="flex-1 py-1.5 px-3 rounded-lg bg-[#F0F4F1] hover:bg-[#E2ECE5] text-[#1E3B2F] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Call Phone</span>
+                  </a>
+                  <a
+                    href={`https://wa.me/${waPhone}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-1.5 px-3 rounded-lg bg-[#EBF5EF] hover:bg-[#D5ECD7] text-[#1B5E20] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="border-t border-[#F2F0EA] pt-2">
+                <span className="text-[#64746A] block mb-0.5">Delivery Destination:</span>
+                <p className="font-medium text-[#182C22] flex items-start gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#245C38] shrink-0 mt-0.5" />
+                  <span>{order.deliveryLocation}</span>
+                </p>
+                <p className="text-[11px] text-[#64746A] pl-5 mt-0.5">
+                  Method: <strong>{order.deliveryMethod.replace(/_/g, ' ')}</strong>
+                </p>
+              </div>
+
+              {order.orderNotes && (
+                <div className="p-3 rounded-xl bg-[#FEF9E7] border border-[#F9E79F] text-[#7D6608] text-xs">
+                  <strong>Customer Instructions:</strong>
+                  <p className="mt-0.5">{order.orderNotes}</p>
+                </div>
+              )}
             </div>
-            <p className="text-[11px] text-[#3A664B]">
-              Keep customers informed at every stage to build trust and guarantee fast M-Pesa payments.
+          </div>
+
+          {/* Card 4: 1-Click WhatsApp Customer Messages */}
+          <div className="bg-[#EBF5EF] rounded-2xl border border-[#C5E1CF] p-5 space-y-3">
+            <div className="flex items-center gap-2 text-[#245C38]">
+              <MessageCircle className="w-4 h-4 text-[#245C38]" />
+              <h4 className="font-semibold text-xs uppercase tracking-wide">
+                1-Click WhatsApp Notifications
+              </h4>
+            </div>
+
+            <p className="text-[11px] text-[#3B664B] leading-relaxed">
+              Click any button below to launch WhatsApp with a pre-filled message for this order:
             </p>
-            <div className="space-y-1.5 pt-1">
+
+            <div className="space-y-2 pt-1">
               <a
                 href={buildAdminCustomerWhatsAppUrl(order, 'DELIVERY_QUOTE')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-[11px] font-medium text-[#1B5E20] hover:underline"
+                className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#F2F7F4] border border-[#C5E1CF] text-[#1B5E20] font-medium text-xs flex items-center justify-between transition-colors shadow-2xs"
               >
-                → Send Delivery Quote & Till Info
+                <span>1. Send Payment Request & Till Info</span>
+                <Send className="w-3 h-3 opacity-70" />
               </a>
+
               <a
                 href={buildAdminCustomerWhatsAppUrl(order, 'PAYMENT_CONFIRMED')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-[11px] font-medium text-[#1B5E20] hover:underline"
+                className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#F2F7F4] border border-[#C5E1CF] text-[#1B5E20] font-medium text-xs flex items-center justify-between transition-colors shadow-2xs"
               >
-                → Send Payment Acknowledged Notice
+                <span>2. Send Payment Receipt</span>
+                <Send className="w-3 h-3 opacity-70" />
               </a>
+
               <a
                 href={buildAdminCustomerWhatsAppUrl(order, 'DISPATCHED')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-[11px] font-medium text-[#1B5E20] hover:underline"
+                className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#F2F7F4] border border-[#C5E1CF] text-[#1B5E20] font-medium text-xs flex items-center justify-between transition-colors shadow-2xs"
               >
-                → Send Rider / Courier Dispatch Notice
+                <span>3. Send Rider / Dispatch Alert</span>
+                <Send className="w-3 h-3 opacity-70" />
               </a>
             </div>
           </div>

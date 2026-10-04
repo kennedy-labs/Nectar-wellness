@@ -153,14 +153,14 @@
       ],
       "usageInstructions": "Mix 1 teaspoon (approx 5g) into fresh juices, smoothies, warm water with lemon, or sprinkle over warm soups and salads.",
       "price": 950,
-      "stockQuantity": 32,
+      "stockQuantity": 27,
       "categoryId": "cat_powders",
       "categoryName": "Herbal Powders",
       "image": "/src/assets/images/product_moringa_powder_1790820605379.jpg",
       "isFeatured": true,
       "isActive": true,
       "createdAt": "2026-09-16T09:00:00.000Z",
-      "updatedAt": "2026-09-30T10:00:00.000Z"
+      "updatedAt": "2026-10-04T15:25:22.051Z"
     },
     {
       "id": "prod_shilajit_gold",
@@ -178,14 +178,14 @@
       ],
       "usageInstructions": "Dissolve a pea-sized portion (300mg–500mg) using the included measuring stick in warm filtered water, herbal tea, or raw milk. Consume once daily in the morning.",
       "price": 3800,
-      "stockQuantity": 18,
+      "stockQuantity": 13,
       "categoryId": "cat_resins",
       "categoryName": "Pure Resins & Shilajit",
       "image": "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
       "isFeatured": true,
       "isActive": true,
       "createdAt": "2026-09-15T08:00:00.000Z",
-      "updatedAt": "2026-09-30T10:00:00.000Z"
+      "updatedAt": "2026-10-04T15:25:22.050Z"
     }
   ],
   "orders": [
@@ -197,36 +197,36 @@
       "deliveryMethod": "NAIROBI_LOCAL",
       "deliveryLocation": "Kilimani, Dennis Pritt Rd, Apt 3A",
       "orderNotes": "Please call when the rider arrives at the gate.",
+      "subtotal": 4750,
+      "deliveryFee": 1500,
+      "totalAmount": 6250,
+      "paymentMethod": "MPESA_BUY_GOODS",
+      "paymentStatus": "CONFIRMED",
+      "paymentReference": "QJK8912P4",
+      "status": "PENDING",
+      "adminNotes": "Bolt rider dispatched, package verified with herbal usage guide.",
       "items": [
         {
           "id": "item_1",
+          "quantity": 1,
           "productId": "prod_shilajit_gold",
           "productName": "Pure Himalayan Shilajit Resin (Gold Grade)",
           "productSlug": "pure-himalayan-shilajit-resin-gold-grade",
           "productImage": "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
-          "quantity": 1,
           "priceAtPurchase": 3800
         },
         {
           "id": "item_2",
+          "quantity": 1,
           "productId": "prod_moringa_powder",
           "productName": "Kilifi Raw Organic Moringa Leaf Powder",
           "productSlug": "kilifi-raw-organic-moringa-leaf-powder",
           "productImage": "/src/assets/images/product_moringa_powder_1790820605379.jpg",
-          "quantity": 1,
           "priceAtPurchase": 950
         }
       ],
-      "subtotal": 4750,
-      "deliveryFee": 300,
-      "totalAmount": 5050,
-      "paymentMethod": "MPESA_BUY_GOODS",
-      "paymentStatus": "CONFIRMED",
-      "paymentReference": "QJK8912P4",
-      "status": "PROCESSING",
-      "adminNotes": "Bolt rider dispatched, package verified with herbal usage guide.",
       "createdAt": "2026-10-01T12:33:29.610Z",
-      "updatedAt": "2026-10-01T14:33:29.610Z"
+      "updatedAt": "2026-10-04T15:25:51.254Z"
     }
   ]
 }
