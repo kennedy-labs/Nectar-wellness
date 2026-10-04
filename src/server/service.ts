@@ -177,7 +177,53 @@ export const service = {
   },
 
   // Auth verification
+  getSecurityStatus(): { hasEnvOverride: boolean; isDefaultPin: boolean } {
+    const envPin = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD;
+    const storedPin = repository.getAdminPin();
+    const hasEnvOverride = Boolean(envPin);
+    const isDefaultPin = !hasEnvOverride && !storedPin;
+    return { hasEnvOverride, isDefaultPin };
+  },
+
   verifyAdminPin(pin: string): boolean {
-    return pin === BUSINESS_CONFIG.adminDefaultPin;
+    const trimmed = (pin || '').trim();
+    if (!trimmed) return false;
+
+    // 1. Render/Cloud Environment Variable has highest priority
+    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
+    if (envPin) {
+      return trimmed === envPin;
+    }
+
+    // 2. Custom Owner PIN persisted in PostgreSQL/db.json
+    const storedPin = repository.getAdminPin();
+    if (storedPin) {
+      return trimmed === storedPin.trim();
+    }
+
+    // 3. Fallback to initial setup PIN
+    return trimmed === BUSINESS_CONFIG.adminDefaultPin;
+  },
+
+  async updateAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; error?: string }> {
+    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
+    if (envPin) {
+      return {
+        success: false,
+        error: 'Admin PIN is locked by the ADMIN_PIN environment variable on your server (e.g. Render Dashboard). Update it directly in your environment variables.',
+      };
+    }
+
+    if (!this.verifyAdminPin(currentPin)) {
+      return { success: false, error: 'Current PIN is incorrect' };
+    }
+
+    const trimmedNew = (newPin || '').trim();
+    if (trimmedNew.length < 4) {
+      return { success: false, error: 'New PIN must be at least 4 characters/digits' };
+    }
+
+    await repository.setAdminPin(trimmedNew);
+    return { success: true };
   },
 };

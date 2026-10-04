@@ -7,16 +7,18 @@ export const repository = {
   async syncFromPostgres(): Promise<void> {
     if (!isPostgresReady()) return;
     try {
-      const [pgCategories, pgProducts, pgOrders] = await Promise.all([
+      const [pgCategories, pgProducts, pgOrders, pgPin] = await Promise.all([
         postgresDb.getAllCategories(),
         postgresDb.getAllProducts(),
         postgresDb.getAllOrders(),
+        postgresDb.getSetting('admin_pin'),
       ]);
 
       const localData = db.read();
       if (pgCategories.length > 0) localData.categories = pgCategories;
       if (pgProducts.length > 0) localData.products = pgProducts;
       if (pgOrders.length > 0) localData.orders = pgOrders;
+      if (pgPin) localData.adminPin = pgPin;
       db.write(localData);
       console.log('🔄 Repository synchronized from Neon PostgreSQL.');
     } catch (err: any) {
@@ -109,5 +111,21 @@ export const repository = {
     }
 
     return order;
+  },
+
+  // Owner Admin PIN
+  getAdminPin(): string | undefined {
+    return db.read().adminPin;
+  },
+  async setAdminPin(pin: string): Promise<void> {
+    const data = db.read();
+    data.adminPin = pin;
+    db.write(data);
+
+    if (isPostgresReady()) {
+      await postgresDb.setSetting('admin_pin', pin).catch((err) => {
+        console.error('Failed to sync admin pin to Neon:', err.message);
+      });
+    }
   },
 };

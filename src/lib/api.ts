@@ -331,4 +331,33 @@ export const api = {
     }
     return false;
   },
+
+  async getAdminSecurityStatus(): Promise<{ hasEnvOverride: boolean; isDefaultPin: boolean }> {
+    try {
+      const res = await fetch('/api/admin/security-status');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return { hasEnvOverride: false, isDefaultPin: true };
+  },
+
+  async changeAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await fetch('/api/admin/change-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPin, newPin }),
+      });
+      const json = await res.json();
+      return json;
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Network error' };
+    }
+  },
 };

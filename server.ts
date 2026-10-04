@@ -163,6 +163,20 @@ async function startServer() {
     }
   });
 
+  app.get('/api/admin/security-status', (_req: Request, res: Response) => {
+    res.json({ success: true, data: service.getSecurityStatus() });
+  });
+
+  app.post('/api/admin/change-pin', async (req: Request, res: Response) => {
+    const { currentPin, newPin } = req.body;
+    const result = await service.updateAdminPin(currentPin, newPin);
+    if (result.success) {
+      res.json({ success: true, message: 'Admin PIN updated successfully' });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  });
+
   // Serve static asset folders directly (ensures images always load in dev & cloud deployments)
   app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
   app.use('/assets', express.static(path.resolve(__dirname, 'src/assets')));

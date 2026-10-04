@@ -13,6 +13,7 @@ export interface DatabaseSchema {
   categories: Category[];
   products: Product[];
   orders: Order[];
+  adminPin?: string;
 }
 
 function ensureDataDir() {

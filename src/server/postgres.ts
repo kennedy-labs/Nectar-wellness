@@ -98,6 +98,12 @@ export async function initPostgres(initialCategories: Category[], initialProduct
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key VARCHAR(64) PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
       `);
 
       // Check if categories need initial seeding
@@ -357,5 +363,32 @@ export const postgresDb = {
       new Date().toISOString(),
     ]);
     return rowToOrder(res.rows[0]);
+  },
+
+  async getSetting(key: string): Promise<string | null> {
+    const p = getPostgresPool();
+    if (!p) return null;
+    try {
+      const res = await p.query('SELECT value FROM app_settings WHERE key = $1', [key]);
+      return res.rows[0]?.value || null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setSetting(key: string, value: string): Promise<boolean> {
+    const p = getPostgresPool();
+    if (!p) return false;
+    try {
+      await p.query(
+        `INSERT INTO app_settings (key, value, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+        [key, value]
+      );
+      return true;
+    } catch {
+      return false;
+    }
   },
 };
