@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
+import http from 'http';
 import fs from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
@@ -14,6 +15,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
+  const server = http.createServer(app);
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   // Initialize and sync with Neon PostgreSQL if configured
@@ -172,8 +174,12 @@ async function startServer() {
 
   // Dev mode: Mount Vite middleware
   if (process.env.NODE_ENV !== 'production') {
+    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : { server },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -200,7 +206,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Nature’s Nectar Wellness server running on http://0.0.0.0:${PORT}`);
   });
 }
