@@ -1,5 +1,5 @@
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from '../config/constants';
-import { CartItem, Category, Order, Product } from '../types';
+import { AdminUser, CartItem, Category, Order, Product } from '../types';
 
 const STORAGE_KEYS = {
   CART: 'nnw_cart_v1',
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   CATEGORIES: 'nnw_categories_v1',
   ORDERS: 'nnw_orders_v1',
   ADMIN_AUTH: 'nnw_admin_auth_v1',
+  ADMIN_USER: 'nnw_admin_user_v1',
   LAST_ORDER_ID: 'nnw_last_order_id_v1',
 };
 
@@ -204,6 +205,27 @@ export const storage = {
         localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
       } else {
         localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_USER);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  getAdminUser(): AdminUser | null {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ADMIN_USER);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+  setAdminUser(user: AdminUser | null): void {
+    try {
+      if (user) {
+        localStorage.setItem(STORAGE_KEYS.ADMIN_USER, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_USER);
       }
     } catch (e) {
       console.error(e);

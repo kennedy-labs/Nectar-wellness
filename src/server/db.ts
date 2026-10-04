@@ -9,11 +9,21 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.resolve(__dirname, '../../data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
+export interface StoredAdminUser {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: 'owner';
+  claimedAt: string;
+}
+
 export interface DatabaseSchema {
   categories: Category[];
   products: Product[];
   orders: Order[];
   adminPin?: string;
+  adminUser?: StoredAdminUser | null;
 }
 
 function ensureDataDir() {

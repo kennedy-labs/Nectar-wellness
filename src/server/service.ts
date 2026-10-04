@@ -1,7 +1,9 @@
 import { BUSINESS_CONFIG } from '../config/constants.js';
 import { generateOrderId, generateSlug } from '../lib/utils.js';
-import { DeliveryMethod, Order, OrderItem, OrderStatus, PaymentMethod, Product } from '../types/index.js';
+import { AdminSetupStatus, AdminUser, DeliveryMethod, Order, OrderItem, OrderStatus, PaymentMethod, Product } from '../types/index.js';
 import { repository } from './repository.js';
+import { hashPassword, verifyPassword } from './auth.js';
+import { StoredAdminUser } from './db.js';
 
 export interface CreateOrderDTO {
   customerName: string;
@@ -176,33 +178,139 @@ export const service = {
     return repository.saveOrder(order);
   },
 
-  // Auth verification
-  getSecurityStatus(): { hasEnvOverride: boolean; isDefaultPin: boolean } {
-    const envPin = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD;
-    const storedPin = repository.getAdminPin();
-    const hasEnvOverride = Boolean(envPin);
-    const isDefaultPin = !hasEnvOverride && !storedPin;
-    return { hasEnvOverride, isDefaultPin };
+  // Store Owner Setup & Auth Verification
+  getAdminSetupStatus(): AdminSetupStatus {
+    const adminUser = repository.getAdminUser();
+    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
+    return {
+      isClaimed: Boolean(adminUser),
+      ownerEmail: adminUser?.email,
+      ownerName: adminUser?.name,
+      claimedAt: adminUser?.claimedAt,
+      hasEnvOverride: Boolean(envPin),
+    };
+  },
+
+  async setupOwner(email: string, password: string, name: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+    const existing = repository.getAdminUser();
+    if (existing) {
+      return { success: false, error: 'Store ownership has already been registered and claimed by the owner.' };
+    }
+
+    const trimmedEmail = (email || '').trim().toLowerCase();
+    const trimmedPass = (password || '').trim();
+    const trimmedName = (name || '').trim();
+
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return { success: false, error: 'Please provide a valid email address.' };
+    }
+    if (trimmedPass.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long.' };
+    }
+
+    const newUser: StoredAdminUser = {
+      id: `owner_${Date.now()}`,
+      email: trimmedEmail,
+      name: trimmedName || 'Store Owner',
+      passwordHash: hashPassword(trimmedPass),
+      role: 'owner',
+      claimedAt: new Date().toISOString(),
+    };
+
+    await repository.saveAdminUser(newUser);
+
+    return {
+      success: true,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        claimedAt: newUser.claimedAt,
+      },
+    };
+  },
+
+  authenticateAdmin(credentials: { email?: string; password?: string; pin?: string }): { success: boolean; user?: AdminUser; isDevAccess?: boolean; error?: string } {
+    const adminUser = repository.getAdminUser();
+    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
+
+    // 1. Password login by registered owner
+    if (credentials.email && credentials.password) {
+      if (!adminUser) {
+        return { success: false, error: 'Store ownership has not been claimed yet. Please complete initial owner setup.' };
+      }
+      if (credentials.email.trim().toLowerCase() !== adminUser.email.toLowerCase()) {
+        return { success: false, error: 'Unrecognized administrator email.' };
+      }
+      const match = verifyPassword(credentials.password, adminUser.passwordHash);
+      if (!match) {
+        return { success: false, error: 'Invalid password.' };
+      }
+      return {
+        success: true,
+        user: {
+          id: adminUser.id,
+          email: adminUser.email,
+          name: adminUser.name,
+          role: adminUser.role,
+          claimedAt: adminUser.claimedAt,
+        },
+      };
+    }
+
+    // 2. PIN login
+    const pin = (credentials.pin || '').trim();
+    if (pin) {
+      // If Render environment variable is configured, it always works as a server override
+      if (envPin && pin === envPin) {
+        return {
+          success: true,
+          user: adminUser ? { id: adminUser.id, email: adminUser.email, name: adminUser.name, role: adminUser.role, claimedAt: adminUser.claimedAt } : undefined,
+          isDevAccess: true,
+        };
+      }
+
+      // If store ownership is NOT claimed yet, allow developer setup access
+      if (!adminUser) {
+        const storedPin = repository.getAdminPin();
+        const valid = storedPin ? pin === storedPin : pin === BUSINESS_CONFIG.adminDefaultPin;
+        if (valid) {
+          return { success: true, isDevAccess: true };
+        }
+        return { success: false, error: 'Invalid Setup PIN.' };
+      }
+
+      // Once the store has been claimed by the real owner, PIN login is disabled
+      return { success: false, error: 'Store ownership has been claimed. Please log in using your registered owner email and password.' };
+    }
+
+    return { success: false, error: 'Please provide valid login credentials.' };
+  },
+
+  async changeOwnerPassword(email: string, currentPass: string, newPass: string): Promise<{ success: boolean; error?: string }> {
+    const adminUser = repository.getAdminUser();
+    if (!adminUser) {
+      return { success: false, error: 'No owner account registered.' };
+    }
+    if (adminUser.email.toLowerCase() !== (email || '').trim().toLowerCase()) {
+      return { success: false, error: 'Email does not match registered owner.' };
+    }
+    if (!verifyPassword(currentPass, adminUser.passwordHash)) {
+      return { success: false, error: 'Current password is incorrect.' };
+    }
+    if ((newPass || '').trim().length < 6) {
+      return { success: false, error: 'New password must be at least 6 characters.' };
+    }
+
+    adminUser.passwordHash = hashPassword(newPass.trim());
+    await repository.saveAdminUser(adminUser);
+    return { success: true };
   },
 
   verifyAdminPin(pin: string): boolean {
-    const trimmed = (pin || '').trim();
-    if (!trimmed) return false;
-
-    // 1. Render/Cloud Environment Variable has highest priority
-    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
-    if (envPin) {
-      return trimmed === envPin;
-    }
-
-    // 2. Custom Owner PIN persisted in PostgreSQL/db.json
-    const storedPin = repository.getAdminPin();
-    if (storedPin) {
-      return trimmed === storedPin.trim();
-    }
-
-    // 3. Fallback to initial setup PIN
-    return trimmed === BUSINESS_CONFIG.adminDefaultPin;
+    const result = this.authenticateAdmin({ pin });
+    return result.success;
   },
 
   async updateAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; error?: string }> {

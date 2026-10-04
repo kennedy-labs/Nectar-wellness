@@ -78,3 +78,20 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'owner';
+  claimedAt: string;
+}
+
+export interface AdminSetupStatus {
+  isClaimed: boolean;
+  ownerEmail?: string;
+  ownerName?: string;
+  claimedAt?: string;
+  hasEnvOverride?: boolean;
+}
+

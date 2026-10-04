@@ -1,5 +1,5 @@
 import { Category, Order, Product } from '../types/index.js';
-import { db } from './db.js';
+import { db, StoredAdminUser } from './db.js';
 import { isPostgresReady, postgresDb } from './postgres.js';
 
 export const repository = {
@@ -7,11 +7,12 @@ export const repository = {
   async syncFromPostgres(): Promise<void> {
     if (!isPostgresReady()) return;
     try {
-      const [pgCategories, pgProducts, pgOrders, pgPin] = await Promise.all([
+      const [pgCategories, pgProducts, pgOrders, pgPin, pgAdminUser] = await Promise.all([
         postgresDb.getAllCategories(),
         postgresDb.getAllProducts(),
         postgresDb.getAllOrders(),
         postgresDb.getSetting('admin_pin'),
+        postgresDb.getAdminUser(),
       ]);
 
       const localData = db.read();
@@ -19,6 +20,7 @@ export const repository = {
       if (pgProducts.length > 0) localData.products = pgProducts;
       if (pgOrders.length > 0) localData.orders = pgOrders;
       if (pgPin) localData.adminPin = pgPin;
+      if (pgAdminUser) localData.adminUser = pgAdminUser;
       db.write(localData);
       console.log('🔄 Repository synchronized from Neon PostgreSQL.');
     } catch (err: any) {
@@ -125,6 +127,22 @@ export const repository = {
     if (isPostgresReady()) {
       await postgresDb.setSetting('admin_pin', pin).catch((err) => {
         console.error('Failed to sync admin pin to Neon:', err.message);
+      });
+    }
+  },
+
+  // Owner Admin Account
+  getAdminUser(): StoredAdminUser | null {
+    return db.read().adminUser || null;
+  },
+  async saveAdminUser(user: StoredAdminUser): Promise<void> {
+    const data = db.read();
+    data.adminUser = user;
+    db.write(data);
+
+    if (isPostgresReady()) {
+      await postgresDb.saveAdminUser(user).catch((err) => {
+        console.error('Failed to sync admin user to Neon:', err.message);
       });
     }
   },

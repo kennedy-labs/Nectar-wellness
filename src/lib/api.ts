@@ -1,5 +1,5 @@
 import { CreateOrderDTO } from '../server/service';
-import { Category, Order, OrderStatus, Product } from '../types';
+import { AdminSetupStatus, AdminUser, Category, Order, OrderStatus, Product } from '../types';
 import { storage } from './storage';
 
 export const api = {
@@ -308,33 +308,9 @@ export const api = {
     return order;
   },
 
-  async loginAdmin(pin: string): Promise<boolean> {
+  async getAdminSetupStatus(): Promise<AdminSetupStatus> {
     try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          storage.setAdminLoggedIn(true);
-          return true;
-        }
-      }
-    } catch {
-      // Fallback check
-    }
-    if (pin === '2540') {
-      storage.setAdminLoggedIn(true);
-      return true;
-    }
-    return false;
-  },
-
-  async getAdminSecurityStatus(): Promise<{ hasEnvOverride: boolean; isDefaultPin: boolean }> {
-    try {
-      const res = await fetch('/api/admin/security-status');
+      const res = await fetch('/api/admin/setup-status');
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -344,7 +320,63 @@ export const api = {
     } catch {
       // Fallback
     }
-    return { hasEnvOverride: false, isDefaultPin: true };
+    return { isClaimed: false };
+  },
+
+  async setupOwner(data: { email: string; password: string; name: string }): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+    try {
+      const res = await fetch('/api/admin/setup-owner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (json.success) {
+        storage.setAdminLoggedIn(true);
+        if (json.user) storage.setAdminUser(json.user);
+      }
+      return json;
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Network connection failed.' };
+    }
+  },
+
+  async loginAdmin(credentials: { email?: string; password?: string; pin?: string } | string): Promise<{ success: boolean; user?: AdminUser; isDevAccess?: boolean; error?: string }> {
+    const payload = typeof credentials === 'string' ? { pin: credentials } : credentials;
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.success) {
+        storage.setAdminLoggedIn(true);
+        if (json.user) storage.setAdminUser(json.user);
+        return { success: true, user: json.user, isDevAccess: json.isDevAccess };
+      }
+      return { success: false, error: json.error || 'Authentication failed' };
+    } catch {
+      // Fallback check
+      if (payload.pin === '2540') {
+        storage.setAdminLoggedIn(true);
+        return { success: true, isDevAccess: true };
+      }
+      return { success: false, error: 'Network error or server unreachable' };
+    }
+  },
+
+  async changeOwnerPassword(data: { email: string; currentPassword: string; newPassword: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Network error' };
+    }
   },
 
   async changeAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; error?: string }> {

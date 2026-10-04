@@ -228,12 +228,13 @@ export default function App() {
   };
 
   // Admin Handlers
-  const handleAdminLogin = async (pin: string): Promise<boolean> => {
-    const success = await api.loginAdmin(pin);
-    if (success) {
+  const handleAdminLogin = async (credentials: { email?: string; password?: string; pin?: string } | string): Promise<boolean> => {
+    const res = await api.loginAdmin(credentials);
+    if (res.success) {
       setIsAdminLoggedIn(true);
+      return true;
     }
-    return success;
+    return false;
   };
 
   const handleAdminLogout = () => {

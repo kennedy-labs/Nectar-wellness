@@ -153,18 +153,53 @@ async function startServer() {
     }
   });
 
-  // Admin Auth Verification
-  app.post('/api/admin/login', (req: Request, res: Response) => {
-    const { pin } = req.body;
-    if (service.verifyAdminPin(pin)) {
-      res.json({ success: true, token: 'nnw_owner_session_' + Date.now() });
+  // Admin Auth & Setup Routes
+  app.get('/api/admin/setup-status', (_req: Request, res: Response) => {
+    res.json({ success: true, data: service.getAdminSetupStatus() });
+  });
+
+  app.post('/api/admin/setup-owner', async (req: Request, res: Response) => {
+    const { email, password, name } = req.body;
+    const result = await service.setupOwner(email, password, name);
+    if (result.success) {
+      res.json({
+        success: true,
+        token: 'nnw_owner_session_' + Date.now(),
+        user: result.user,
+        message: 'Owner registration successful. Store ownership claimed.',
+      });
     } else {
-      res.status(401).json({ success: false, error: 'Invalid Admin PIN' });
+      res.status(400).json({ success: false, error: result.error });
+    }
+  });
+
+  app.post('/api/admin/login', (req: Request, res: Response) => {
+    const { email, password, pin } = req.body;
+    const result = service.authenticateAdmin({ email, password, pin });
+    if (result.success) {
+      res.json({
+        success: true,
+        token: 'nnw_owner_session_' + Date.now(),
+        user: result.user,
+        isDevAccess: result.isDevAccess,
+      });
+    } else {
+      res.status(401).json({ success: false, error: result.error || 'Authentication failed' });
+    }
+  });
+
+  app.post('/api/admin/change-password', async (req: Request, res: Response) => {
+    const { email, currentPassword, newPassword } = req.body;
+    const result = await service.changeOwnerPassword(email, currentPassword, newPassword);
+    if (result.success) {
+      res.json({ success: true, message: 'Password updated successfully' });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
     }
   });
 
   app.get('/api/admin/security-status', (_req: Request, res: Response) => {
-    res.json({ success: true, data: service.getSecurityStatus() });
+    res.json({ success: true, data: service.getAdminSetupStatus() });
   });
 
   app.post('/api/admin/change-pin', async (req: Request, res: Response) => {

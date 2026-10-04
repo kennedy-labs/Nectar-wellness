@@ -104,6 +104,16 @@ export async function initPostgres(initialCategories: Category[], initialProduct
           value TEXT NOT NULL,
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+
+        CREATE TABLE IF NOT EXISTS admin_users (
+          id VARCHAR(64) PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          password_hash TEXT NOT NULL,
+          role VARCHAR(64) NOT NULL DEFAULT 'owner',
+          claimed_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
       `);
 
       // Check if categories need initial seeding
@@ -386,6 +396,50 @@ export const postgresDb = {
          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
         [key, value]
       );
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async getAdminUser(): Promise<any | null> {
+    const p = getPostgresPool();
+    if (!p) return null;
+    try {
+      const res = await p.query('SELECT * FROM admin_users ORDER BY claimed_at ASC LIMIT 1');
+      if (res.rows.length > 0) {
+        const row = res.rows[0];
+        return {
+          id: row.id,
+          email: row.email,
+          name: row.name,
+          passwordHash: row.password_hash,
+          role: row.role,
+          claimedAt: row.claimed_at,
+        };
+      }
+      const raw = await this.getSetting('admin_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async saveAdminUser(user: any): Promise<boolean> {
+    const p = getPostgresPool();
+    if (!p) return false;
+    try {
+      await p.query(
+        `INSERT INTO admin_users (id, email, name, password_hash, role, claimed_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (id) DO UPDATE SET
+           email = EXCLUDED.email,
+           name = EXCLUDED.name,
+           password_hash = EXCLUDED.password_hash,
+           updated_at = NOW()`,
+        [user.id, user.email, user.name, user.passwordHash, user.role, user.claimedAt]
+      );
+      await this.setSetting('admin_user', JSON.stringify(user));
       return true;
     } catch {
       return false;
