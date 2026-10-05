@@ -153,14 +153,14 @@
       ],
       "usageInstructions": "Mix 1 teaspoon (approx 5g) into fresh juices, smoothies, warm water with lemon, or sprinkle over warm soups and salads.",
       "price": 950,
-      "stockQuantity": 27,
+      "stockQuantity": 24,
       "categoryId": "cat_powders",
       "categoryName": "Herbal Powders",
       "image": "/src/assets/images/product_moringa_powder_1790820605379.jpg",
       "isFeatured": true,
       "isActive": true,
       "createdAt": "2026-09-16T09:00:00.000Z",
-      "updatedAt": "2026-10-04T15:25:22.051Z"
+      "updatedAt": "2026-10-04T15:57:46.262Z"
     },
     {
       "id": "prod_shilajit_gold",
@@ -178,14 +178,14 @@
       ],
       "usageInstructions": "Dissolve a pea-sized portion (300mg–500mg) using the included measuring stick in warm filtered water, herbal tea, or raw milk. Consume once daily in the morning.",
       "price": 3800,
-      "stockQuantity": 13,
+      "stockQuantity": 10,
       "categoryId": "cat_resins",
       "categoryName": "Pure Resins & Shilajit",
       "image": "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
       "isFeatured": true,
       "isActive": true,
       "createdAt": "2026-09-15T08:00:00.000Z",
-      "updatedAt": "2026-10-04T15:25:22.050Z"
+      "updatedAt": "2026-10-04T15:57:46.263Z"
     }
   ],
   "orders": [
@@ -203,7 +203,7 @@
       "paymentMethod": "MPESA_BUY_GOODS",
       "paymentStatus": "CONFIRMED",
       "paymentReference": "QJK8912P4",
-      "status": "PENDING",
+      "status": "PAID",
       "adminNotes": "Bolt rider dispatched, package verified with herbal usage guide.",
       "items": [
         {
@@ -226,7 +226,7 @@
         }
       ],
       "createdAt": "2026-10-01T12:33:29.610Z",
-      "updatedAt": "2026-10-04T15:25:51.254Z"
+      "updatedAt": "2026-10-04T15:57:46.265Z"
     }
   ]
 }
