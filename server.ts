@@ -219,6 +219,27 @@ async function startServer() {
     }
   });
 
+  // Explicit SEO Routes
+  app.get('/sitemap.xml', (_req: Request, res: Response) => {
+    const sitemapPath = path.resolve(__dirname, 'public', 'sitemap.xml');
+    if (fs.existsSync(sitemapPath)) {
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.sendFile(sitemapPath);
+    } else {
+      res.status(404).send('Sitemap not found');
+    }
+  });
+
+  app.get('/robots.txt', (_req: Request, res: Response) => {
+    const robotsPath = path.resolve(__dirname, 'public', 'robots.txt');
+    if (fs.existsSync(robotsPath)) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.sendFile(robotsPath);
+    } else {
+      res.status(404).send('Robots not found');
+    }
+  });
+
   // Serve static asset folders directly (ensures images always load in dev & cloud deployments)
   app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
   app.use('/assets', express.static(path.resolve(__dirname, 'src/assets')));
