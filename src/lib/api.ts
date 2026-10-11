@@ -279,12 +279,12 @@ export const api = {
     return order;
   },
 
-  async confirmPayment(orderId: string, paymentReference: string): Promise<Order | null> {
+  async confirmPayment(orderId: string, paymentReference?: string): Promise<Order | null> {
     try {
       const res = await fetch(`/api/orders/${orderId}/payment`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentReference }),
+        body: JSON.stringify({ paymentReference: paymentReference?.trim() || 'VERIFIED_VIA_SMS' }),
       });
       if (res.ok) {
         const json = await res.json();
@@ -300,9 +300,37 @@ export const api = {
     const order = storage.getOrders().find((o) => o.id === orderId);
     if (!order) return null;
     order.paymentStatus = 'CONFIRMED';
-    order.paymentReference = paymentReference.toUpperCase();
+    order.paymentReference = (paymentReference?.trim() || 'VERIFIED_VIA_SMS').toUpperCase();
     if (['AWAITING_PAYMENT', 'REVIEWING_DELIVERY', 'PENDING'].includes(order.status)) {
       order.status = 'PAID';
+    }
+    storage.updateOrder(order);
+    return order;
+  },
+
+  async revertPayment(orderId: string): Promise<Order | null> {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/payment/revert`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          storage.updateOrder(json.data);
+          return json.data;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    const order = storage.getOrders().find((o) => o.id === orderId);
+    if (!order) return null;
+    order.paymentStatus = 'UNPAID';
+    order.paymentReference = undefined;
+    if (order.status === 'PAID') {
+      order.status = 'AWAITING_PAYMENT';
     }
     storage.updateOrder(order);
     return order;

@@ -37,7 +37,8 @@ interface AdminPageProps {
   onNavigateHome: () => void;
   onUpdateDeliveryFee: (orderId: string, fee: number, notes?: string) => Promise<void>;
   onUpdateStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>;
-  onConfirmPayment: (orderId: string, reference: string) => Promise<void>;
+  onConfirmPayment: (orderId: string, reference?: string) => Promise<void>;
+  onRevertPayment?: (orderId: string) => Promise<void>;
   onSaveProduct: (productData: Partial<Product>) => Promise<void>;
   onDeleteProduct: (productId: string) => Promise<void>;
   onDuplicateProduct: (product: Product) => Promise<void>;
@@ -56,6 +57,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   onUpdateDeliveryFee,
   onUpdateStatus,
   onConfirmPayment,
+  onRevertPayment,
   onSaveProduct,
   onDeleteProduct,
   onDuplicateProduct,
@@ -636,6 +638,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               onUpdateDeliveryFee={onUpdateDeliveryFee}
               onUpdateStatus={onUpdateStatus}
               onConfirmPayment={onConfirmPayment}
+              onRevertPayment={onRevertPayment}
             />
           </div>
         )}

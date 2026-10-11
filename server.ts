@@ -141,11 +141,18 @@ async function startServer() {
 
   app.patch('/api/orders/:id/payment', (req: Request, res: Response) => {
     try {
-      const { paymentReference } = req.body;
-      if (!paymentReference) {
-        return res.status(400).json({ success: false, error: 'Payment reference is required' });
-      }
+      const { paymentReference } = req.body || {};
       const updated = service.confirmPayment(req.params.id, paymentReference);
+      if (!updated) return res.status(404).json({ success: false, error: 'Order not found' });
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  app.patch('/api/orders/:id/payment/revert', (req: Request, res: Response) => {
+    try {
+      const updated = service.revertPayment(req.params.id);
       if (!updated) return res.status(404).json({ success: false, error: 'Order not found' });
       res.json({ success: true, data: updated });
     } catch (err: any) {

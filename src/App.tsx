@@ -256,8 +256,17 @@ export default function App() {
     }
   };
 
-  const handleConfirmPayment = async (orderId: string, reference: string) => {
+  const handleConfirmPayment = async (orderId: string, reference?: string) => {
     const updated = await api.confirmPayment(orderId, reference);
+    if (updated) {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+      const freshProducts = await api.getProducts();
+      setProducts(freshProducts);
+    }
+  };
+
+  const handleRevertPayment = async (orderId: string) => {
+    const updated = await api.revertPayment(orderId);
     if (updated) {
       setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
       const freshProducts = await api.getProducts();
@@ -357,6 +366,7 @@ export default function App() {
         onUpdateDeliveryFee={handleUpdateDeliveryFee}
         onUpdateStatus={handleUpdateOrderStatus}
         onConfirmPayment={handleConfirmPayment}
+        onRevertPayment={handleRevertPayment}
         onSaveProduct={handleSaveProduct}
         onDeleteProduct={handleDeleteProduct}
         onDuplicateProduct={handleDuplicateProduct}

@@ -20,7 +20,8 @@ interface AdminOrderManagementProps {
   orders: Order[];
   onUpdateDeliveryFee: (orderId: string, fee: number, notes?: string) => Promise<void>;
   onUpdateStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>;
-  onConfirmPayment: (orderId: string, reference: string) => Promise<void>;
+  onConfirmPayment: (orderId: string, reference?: string) => Promise<void>;
+  onRevertPayment?: (orderId: string) => Promise<void>;
 }
 
 const ALL_STATUSES: { key: OrderStatus | 'ALL'; label: string; countFilter?: (orders: Order[]) => number }[] = [
@@ -62,6 +63,7 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
   onUpdateDeliveryFee,
   onUpdateStatus,
   onConfirmPayment,
+  onRevertPayment,
 }) => {
   const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [search, setSearch] = useState('');
@@ -80,6 +82,7 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
         onUpdateDeliveryFee={onUpdateDeliveryFee}
         onUpdateStatus={onUpdateStatus}
         onConfirmPayment={onConfirmPayment}
+        onRevertPayment={onRevertPayment}
       />
     );
   }

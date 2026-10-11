@@ -33,7 +33,8 @@ interface AdminOrderWorkflowProps {
   onSelectOrder: (order: Order) => void;
   onUpdateDeliveryFee: (orderId: string, fee: number, notes?: string) => Promise<void>;
   onUpdateStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>;
-  onConfirmPayment: (orderId: string, reference: string) => Promise<void>;
+  onConfirmPayment: (orderId: string, reference?: string) => Promise<void>;
+  onRevertPayment?: (orderId: string) => Promise<void>;
 }
 
 const STATUS_DEFINITIONS: {
@@ -94,6 +95,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   onUpdateDeliveryFee,
   onUpdateStatus,
   onConfirmPayment,
+  onRevertPayment,
 }) => {
   // Workflow View Mode: 'MANAGE' -> 'UPDATE_STATUS'
   const [activeWorkflowStep, setActiveWorkflowStep] = useState<'MANAGE' | 'UPDATE_STATUS'>('MANAGE');
@@ -105,6 +107,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   const [paymentRefInput, setPaymentRefInput] = useState<string>(
     order.paymentReference || ''
   );
+  const [showManualRefInput, setShowManualRefInput] = useState(false);
   const [adminNotesInput, setAdminNotesInput] = useState<string>(
     order.adminNotes || ''
   );
@@ -127,6 +130,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
     setAdminNotesInput(order.adminNotes || '');
     setTargetStatus(order.status);
     setStatusChangeNotes('');
+    setShowManualRefInput(false);
     setFeedback(null);
   }, [order.id]);
 
@@ -155,17 +159,30 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   };
 
   const handleConfirmPayment = async () => {
-    if (!paymentRefInput.trim()) {
-      setFeedback({ type: 'error', text: 'Please enter the M-Pesa transaction reference code.' });
-      return;
-    }
     setSavingPayment(true);
     setFeedback(null);
     try {
-      await onConfirmPayment(order.id, paymentRefInput.trim());
-      setFeedback({ type: 'success', text: 'Payment confirmed & inventory stock updated!' });
+      await onConfirmPayment(order.id, paymentRefInput.trim() || undefined);
+      setFeedback({ type: 'success', text: `Order #${order.id} marked as Paid! Inventory stock updated.` });
     } catch {
-      setFeedback({ type: 'error', text: 'Failed to confirm payment.' });
+      setFeedback({ type: 'error', text: 'Failed to mark order as paid.' });
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
+  const handleRevertPayment = async () => {
+    setSavingPayment(true);
+    setFeedback(null);
+    try {
+      if (onRevertPayment) {
+        await onRevertPayment(order.id);
+      } else {
+        await onUpdateStatus(order.id, 'AWAITING_PAYMENT');
+      }
+      setFeedback({ type: 'success', text: `Payment undone. Order #${order.id} is now marked as Unpaid.` });
+    } catch {
+      setFeedback({ type: 'error', text: 'Failed to revert payment status.' });
     } finally {
       setSavingPayment(false);
     }
@@ -464,51 +481,122 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               {/* Card 2: Payment Verification */}
               <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-3">
-                  <h3 className="font-display font-medium text-base text-[#182C22]">
-                    M-Pesa Payment Verification
-                  </h3>
+                  <div>
+                    <h3 className="font-display font-medium text-base text-[#182C22]">
+                      M-Pesa Payment Verification
+                    </h3>
+                    <p className="text-xs text-[#5D6B62]">
+                      Check your phone for M-Pesa Till SMS, then mark as paid.
+                    </p>
+                  </div>
                   <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
                       order.paymentStatus === 'CONFIRMED'
-                        ? 'bg-[#EBF5EF] text-[#15803D]'
-                        : 'bg-[#FEF3C7] text-[#92400E]'
+                        ? 'bg-[#EBF5EF] text-[#15803D] border-[#C5E1CF]'
+                        : 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
                     }`}
                   >
-                    {order.paymentStatus === 'CONFIRMED' ? '✓ CONFIRMED' : '⏳ UNPAID'}
+                    {order.paymentStatus === 'CONFIRMED' ? '✓ PAID' : '⏳ UNPAID'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9]">
-                    <span className="text-[#64746A] block mb-0.5">M-Pesa Buy Goods Till:</span>
-                    <strong className="font-mono text-sm text-[#1A2E23]">{BUSINESS_CONFIG.mpesaTill}</strong>
-                    <span className="block text-[#64746A] text-[11px] mt-0.5">
-                      Store Name: {BUSINESS_CONFIG.mpesaStoreName}
-                    </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs items-center">
+                  {/* Left: Till Info & Amount */}
+                  <div className="p-3.5 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#64746A]">Buy Goods Till:</span>
+                      <strong className="font-mono text-sm text-[#1A2E23]">{BUSINESS_CONFIG.mpesaTill}</strong>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#64746A]">Expected Total:</span>
+                      <strong className="font-mono text-sm text-[#1E3B2F]">{formatKES(order.totalAmount)}</strong>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-[#64746A] pt-1 border-t border-[#EAECE9]">
+                      <span>Customer:</span>
+                      <span className="font-medium text-[#1A2E23]">{order.customerName} ({order.customerPhone})</span>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                      M-Pesa Transaction Code
-                    </label>
-                    <div className="flex items-center gap-2">
+                  {/* Right: 1-Click Action or Undo */}
+                  <div className="p-3.5 rounded-xl border border-[#E8ECE9] bg-[#FAFAF8] space-y-2.5">
+                    {order.paymentStatus === 'CONFIRMED' ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[#15803D] font-semibold text-xs">
+                          <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
+                          <span>Payment Confirmed on Till</span>
+                        </div>
+                        <p className="text-[11px] text-[#556358]">
+                          Received {formatKES(order.totalAmount)}.
+                          {order.paymentReference && order.paymentReference !== 'VERIFIED_VIA_SMS' && (
+                            <span className="block font-mono text-[10px] text-[#245C38] mt-0.5">
+                              Ref: {order.paymentReference}
+                            </span>
+                          )}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={savingPayment}
+                          onClick={handleRevertPayment}
+                          className="px-3 py-1.5 rounded-xl border border-[#F2D4D4] bg-white hover:bg-[#FDF2F2] text-[#9B1C1C] text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+                          title="Undo payment status and restore stock"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>{savingPayment ? 'Reverting...' : 'Undo — Mark as Unpaid'}</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-[#556358] leading-relaxed">
+                          Check your phone for Till SMS of <strong className="text-[#1A2E23]">{formatKES(order.totalAmount)}</strong>. Once received:
+                        </p>
+                        <button
+                          type="button"
+                          disabled={savingPayment}
+                          onClick={handleConfirmPayment}
+                          className="w-full py-2.5 px-4 bg-[#15803D] hover:bg-[#126631] disabled:bg-[#8F9E94] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-2xs"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>{savingPayment ? 'Marking as Paid...' : 'Mark as Paid'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Optional Note / Code accordion */}
+                <div className="pt-2 border-t border-[#F2F0EA] flex items-center justify-between text-xs">
+                  {!showManualRefInput && !order.paymentReference ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowManualRefInput(true)}
+                      className="text-[11px] text-[#556358] hover:text-[#182C22] underline cursor-pointer"
+                    >
+                      + Optional: Record reference code
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 max-w-sm w-full">
                       <input
                         type="text"
                         value={paymentRefInput}
                         onChange={(e) => setPaymentRefInput(e.target.value.toUpperCase())}
-                        placeholder="e.g. QJK8912P4"
-                        className="flex-1 px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono uppercase tracking-wider text-[#182C22]"
+                        placeholder="Optional code (e.g. QJK8912P4)"
+                        className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#D5D3CA] rounded-lg outline-none font-mono uppercase text-[#182C22]"
                       />
                       <button
                         type="button"
-                        disabled={savingPayment || !paymentRefInput.trim()}
-                        onClick={handleConfirmPayment}
-                        className="px-3.5 py-2 bg-[#15803D] hover:bg-[#126631] disabled:bg-[#8F9E94] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer"
+                        onClick={() => {
+                          handleConfirmPayment();
+                          setShowManualRefInput(false);
+                        }}
+                        className="px-3 py-1.5 bg-[#20392D] text-white text-xs font-medium rounded-lg hover:bg-[#162920] cursor-pointer"
                       >
-                        {savingPayment ? 'Saving...' : 'Confirm'}
+                        Save
                       </button>
                     </div>
-                  </div>
+                  )}
+                  {order.paymentStatus === 'CONFIRMED' && (
+                    <span className="text-[11px] text-[#64746A]">Payment can be undone anytime</span>
+                  )}
                 </div>
               </div>
 

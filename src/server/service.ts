@@ -155,23 +155,54 @@ export const service = {
     return repository.saveOrder(order);
   },
 
-  confirmPayment(orderId: string, paymentReference: string): Order | null {
+  confirmPayment(orderId: string, paymentReference?: string): Order | null {
     const order = repository.findOrderById(orderId);
     if (!order) return null;
 
+    const wasAlreadyConfirmed = order.paymentStatus === 'CONFIRMED';
     order.paymentStatus = 'CONFIRMED';
-    order.paymentReference = paymentReference.trim().toUpperCase();
+    order.paymentReference = (paymentReference?.trim() || 'VERIFIED_VIA_SMS').toUpperCase();
     if (order.status === 'AWAITING_PAYMENT' || order.status === 'REVIEWING_DELIVERY' || order.status === 'PENDING') {
       order.status = 'PAID';
     }
     order.updatedAt = new Date().toISOString();
 
-    // Decrement stock upon payment confirmation
-    for (const item of order.items) {
-      const product = repository.findProductById(item.productId);
-      if (product) {
-        product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
-        repository.saveProduct(product);
+    // Decrement stock upon payment confirmation only if not previously confirmed
+    if (!wasAlreadyConfirmed) {
+      for (const item of order.items) {
+        const product = repository.findProductById(item.productId);
+        if (product) {
+          product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
+          repository.saveProduct(product);
+        }
+      }
+    }
+
+    return repository.saveOrder(order);
+  },
+
+  revertPayment(orderId: string): Order | null {
+    const order = repository.findOrderById(orderId);
+    if (!order) return null;
+
+    const wasConfirmed = order.paymentStatus === 'CONFIRMED';
+    order.paymentStatus = 'UNPAID';
+    order.paymentReference = undefined;
+
+    // If order is currently in PAID, return it to AWAITING_PAYMENT
+    if (order.status === 'PAID') {
+      order.status = 'AWAITING_PAYMENT';
+    }
+    order.updatedAt = new Date().toISOString();
+
+    // Restore stock if payment was previously confirmed
+    if (wasConfirmed) {
+      for (const item of order.items) {
+        const product = repository.findProductById(item.productId);
+        if (product) {
+          product.stockQuantity = product.stockQuantity + item.quantity;
+          repository.saveProduct(product);
+        }
       }
     }
 
