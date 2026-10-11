@@ -261,7 +261,7 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
                     {order.status === 'AWAITING_PAYMENT' && (
                       <span className="text-[#1E40AF] font-medium flex items-center gap-1 bg-[#EFF6FF] px-2 py-0.5 rounded-md">
                         <Clock className="w-3 h-3" />
-                        <span>Awaiting M-Pesa Code</span>
+                        <span>Awaiting Payment</span>
                       </span>
                     )}
 
@@ -269,6 +269,35 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
                       {formatDate(order.createdAt)}
                     </span>
                   </div>
+                </div>
+
+                {/* Row 3 (Mobile Quick Action Bar): Direct Phone & WhatsApp Taps */}
+                <div className="pt-2 border-t border-[#F5F4F0] flex items-center justify-between gap-2 sm:hidden">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`tel:${order.customerPhone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-1.5 rounded-lg bg-[#F0F4F1] text-[#1E3B2F] font-semibold text-xs flex items-center gap-1.5 min-h-[36px]"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Call</span>
+                    </a>
+                    <a
+                      href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '').startsWith('0') ? '254' + order.customerPhone.replace(/[^0-9]/g, '').slice(1) : order.customerPhone.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-1.5 rounded-lg bg-[#25D366] text-white font-semibold text-xs flex items-center gap-1.5 min-h-[36px]"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+
+                  <span className="text-xs font-semibold text-[#20392D] flex items-center gap-1">
+                    <span>Manage</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </div>
             );

@@ -527,27 +527,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     <div className="min-h-screen bg-[#F7F9F7] text-[#242A24] flex flex-col">
       {/* Standalone Admin Top Navigation */}
       <header className="bg-white border-b border-[#E5E9E6] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#E8EFEA] text-[#224032] flex items-center justify-center font-bold text-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#E8EFEA] text-[#224032] flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
               NN
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-display font-semibold text-lg text-[#1A2E23]">
-                  Nature’s Nectar Operations
+            <div className="truncate">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-display font-semibold text-base sm:text-lg text-[#1A2E23] truncate">
+                  Nature’s Nectar
                 </span>
-                <span className="text-[11px] bg-[#E2ECE5] text-[#1E3B2F] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                <span className="text-[10px] sm:text-[11px] bg-[#E2ECE5] text-[#1E3B2F] font-semibold px-1.5 py-0.2 rounded-md uppercase tracking-wider shrink-0">
                   Admin
                 </span>
               </div>
-              <p className="text-xs text-[#5D6B62]">
+              <p className="text-[11px] text-[#5D6B62] truncate hidden sm:block">
                 Apothecary Management & Fulfillment Console
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Store Ownership Status Badge */}
             {setupStatus?.isClaimed ? (
               <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#EBF5EF] border border-[#C5E1CF] rounded-xl text-xs text-[#245C38]">
@@ -571,18 +571,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
             <button
               onClick={onNavigateHome}
-              className="text-xs font-medium text-[#384A3E] hover:text-[#182C22] bg-[#F2F5F3] hover:bg-[#E6EDE8] px-3.5 py-2 rounded-lg border border-[#D6E0D9] flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="text-xs font-medium text-[#384A3E] hover:text-[#182C22] bg-[#F2F5F3] hover:bg-[#E6EDE8] p-2 sm:px-3.5 sm:py-2 rounded-xl border border-[#D6E0D9] flex items-center gap-1.5 transition-colors cursor-pointer min-h-[36px]"
+              title="View Customer Storefront"
             >
-              <Store className="w-3.5 h-3.5" />
-              <span>Customer Storefront</span>
-              <ExternalLink className="w-3 h-3 opacity-60" />
+              <Store className="w-4 h-4" />
+              <span className="hidden sm:inline">Storefront</span>
             </button>
 
             <button
               onClick={onLogout}
-              className="text-xs font-medium text-[#7C3636] hover:bg-[#FDF2F2] px-3 py-2 rounded-lg border border-[#F2D4D4] flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="text-xs font-medium text-[#7C3636] hover:bg-[#FDF2F2] p-2 sm:px-3 sm:py-2 rounded-xl border border-[#F2D4D4] flex items-center gap-1.5 transition-colors cursor-pointer min-h-[36px]"
+              title="Sign Out"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
@@ -590,43 +591,43 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       </header>
 
       {/* Main Workspace */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
-        {/* Tab Navigation */}
-        <div className="flex border-b border-[#E2E8E4] space-x-6 text-sm">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex-1 w-full space-y-5">
+        {/* Tab Navigation - Touch Scrollable for Phones */}
+        <div className="flex border-b border-[#E2E8E4] space-x-4 sm:space-x-6 text-xs sm:text-sm overflow-x-auto scrollbar-none whitespace-nowrap">
           <button
             onClick={() => setActiveTab('ORDERS')}
-            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] flex items-center gap-2 ${
+            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] flex items-center gap-1.5 shrink-0 ${
               activeTab === 'ORDERS'
                 ? 'border-[#20392D] text-[#1A2E23] font-semibold'
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
-            <span>Orders Fulfillment ({orders.length})</span>
+            <span>Orders ({orders.length})</span>
             {pendingRouteReviews + awaitingPayment > 0 && (
               <span className="text-[10px] bg-[#FEF3C7] text-[#92400E] font-bold px-1.5 py-0.2 rounded-full">
-                {pendingRouteReviews + awaitingPayment} pending
+                {pendingRouteReviews + awaitingPayment}
               </span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('INVENTORY')}
-            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] ${
+            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] shrink-0 ${
               activeTab === 'INVENTORY'
                 ? 'border-[#20392D] text-[#1A2E23] font-semibold'
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
-            Apothecary Inventory ({products.length})
+            Inventory ({products.length})
           </button>
           <button
             onClick={() => setActiveTab('SETTINGS')}
-            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] ${
+            className={`pb-3 font-medium transition-colors cursor-pointer border-b-2 -mb-[2px] shrink-0 ${
               activeTab === 'SETTINGS'
                 ? 'border-[#20392D] text-[#1A2E23] font-semibold'
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
-            Owner Security & Settings
+            Security & PIN
           </button>
         </div>
 

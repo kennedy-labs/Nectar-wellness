@@ -20,6 +20,7 @@ import {
   ArrowRight,
   RefreshCw,
   X,
+  ExternalLink,
 } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../../config/constants';
 import { formatDate, formatKES } from '../../../lib/utils';
@@ -46,25 +47,25 @@ const STATUS_DEFINITIONS: {
   {
     status: 'REVIEWING_DELIVERY',
     label: 'Needs Route Review',
-    description: 'Calculate and set the transport cost based on delivery destination.',
+    description: 'Calculate transport cost based on delivery destination.',
     badgeClass: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
   },
   {
     status: 'AWAITING_PAYMENT',
     label: 'Awaiting Payment',
-    description: 'Quote has been shared; waiting for customer to pay via M-Pesa Buy Goods.',
+    description: 'Quote shared; waiting for customer to pay via M-Pesa Buy Goods.',
     badgeClass: 'bg-[#DBEAFE] text-[#1E40AF] border-[#BFDBFE]',
   },
   {
     status: 'PAID',
     label: 'Payment Confirmed',
-    description: 'M-Pesa transaction code verified; remedies ready for apothecary packaging.',
+    description: 'M-Pesa payment received; remedies ready for packaging.',
     badgeClass: 'bg-[#EBF5EF] text-[#15803D] border-[#C5E1CF]',
   },
   {
     status: 'PROCESSING',
     label: 'Packaging Remedies',
-    description: 'Botanical products, dosage spoons, and seals are being packaged.',
+    description: 'Botanical products, dosage spoons, and seals being packed.',
     badgeClass: 'bg-[#F3E8FF] text-[#6B21A8] border-[#E9D5FF]',
   },
   {
@@ -76,7 +77,7 @@ const STATUS_DEFINITIONS: {
   {
     status: 'DELIVERED',
     label: 'Delivered & Complete',
-    description: 'Customer has received their order safely. Fulfillment finished.',
+    description: 'Customer safely received their order. Fulfillment completed.',
     badgeClass: 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]',
   },
   {
@@ -139,7 +140,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   const prevOrder = currentIndex > 0 ? allOrders[currentIndex - 1] : null;
   const nextOrder = currentIndex < allOrders.length - 1 ? allOrders[currentIndex + 1] : null;
 
-  // Clean customer phone number
+  // Clean customer phone number for direct dialing & WhatsApp
   const cleanPhone = order.customerPhone.replace(/[^0-9]/g, '');
   const waPhone = cleanPhone.startsWith('0') ? '254' + cleanPhone.slice(1) : cleanPhone;
 
@@ -163,7 +164,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
     setFeedback(null);
     try {
       await onConfirmPayment(order.id, paymentRefInput.trim() || undefined);
-      setFeedback({ type: 'success', text: `Order #${order.id} marked as Paid! Inventory stock updated.` });
+      setFeedback({ type: 'success', text: `Order #${order.id} marked as Paid! Stock updated.` });
     } catch {
       setFeedback({ type: 'error', text: 'Failed to mark order as paid.' });
     } finally {
@@ -180,7 +181,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
       } else {
         await onUpdateStatus(order.id, 'AWAITING_PAYMENT');
       }
-      setFeedback({ type: 'success', text: `Payment undone. Order #${order.id} is now marked as Unpaid.` });
+      setFeedback({ type: 'success', text: `Payment undone. Order #${order.id} marked as Unpaid.` });
     } catch {
       setFeedback({ type: 'error', text: 'Failed to revert payment status.' });
     } finally {
@@ -193,7 +194,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
     setFeedback(null);
     try {
       await onUpdateStatus(order.id, order.status, adminNotesInput.trim() || undefined);
-      setFeedback({ type: 'success', text: 'Fulfillment notes saved successfully.' });
+      setFeedback({ type: 'success', text: 'Fulfillment notes saved.' });
     } catch {
       setFeedback({ type: 'error', text: 'Failed to save notes.' });
     } finally {
@@ -217,7 +218,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
       await onUpdateStatus(order.id, targetStatus, updatedNotes);
       setFeedback({
         type: 'success',
-        text: `Order #${order.id} status successfully updated to ${targetStatus.replace(/_/g, ' ')}.`,
+        text: `Order #${order.id} status updated to ${targetStatus.replace(/_/g, ' ')}.`,
       });
       setActiveWorkflowStep('MANAGE');
     } catch {
@@ -231,59 +232,43 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
     STATUS_DEFINITIONS.find((s) => s.status === order.status) || STATUS_DEFINITIONS[0];
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-150">
+    <div className="space-y-4 pb-20 sm:pb-6 animate-in fade-in duration-150">
       {/* ------------------------------------------------------------- */}
-      {/* WORKFLOW MASTER BAR (Back button, Order ID, & Step Switcher) */}
+      {/* 1. MOBILE-OPTIMIZED TOP BAR */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F0F4F1] hover:bg-[#E2ECE5] text-xs font-semibold text-[#1E3B2F] transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Orders</span>
-            </button>
+      <div className="bg-white rounded-2xl border border-[#E2E6E3] p-3.5 sm:p-5 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          {/* Back button */}
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F0F4F1] hover:bg-[#E2ECE5] text-xs font-semibold text-[#1E3B2F] transition-colors cursor-pointer active:scale-95 touch-manipulation min-h-[38px]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Orders</span>
+          </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-mono font-bold text-lg sm:text-xl text-[#1A2E23]">
-                  #{order.id}
-                </h2>
-                <span className="text-[#8B988F]">·</span>
-                <span className="font-semibold text-sm sm:text-base text-[#26382E]">
-                  {order.customerName}
-                </span>
-              </div>
-              <p className="text-xs text-[#5D6B62]">
-                Placed {formatDate(order.createdAt)}
-              </p>
-            </div>
+          {/* Current Status Pill */}
+          <div
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold border truncate max-w-[170px] sm:max-w-none ${currentStatusDef.badgeClass}`}
+          >
+            {currentStatusDef.label}
           </div>
 
-          {/* Current Status Pill & Order Cycling */}
-          <div className="flex items-center gap-2">
-            <div
-              className={`px-3 py-1 rounded-xl text-xs font-semibold border ${currentStatusDef.badgeClass}`}
-            >
-              <span>Status: {currentStatusDef.label}</span>
-            </div>
-
+          {/* Action buttons: Print & Order Stepper */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => window.print()}
-              className="px-3 py-2 rounded-xl border border-[#D5D3CA] text-xs font-medium text-[#29362D] hover:bg-[#F8FAF8] flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Print packing slip"
+              className="p-2 rounded-xl border border-[#D5D3CA] text-[#29362D] hover:bg-[#F8FAF8] transition-colors cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
+              title="Print slip"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Slip</span>
+              <Printer className="w-4 h-4" />
             </button>
 
             <div className="flex items-center border border-[#D5D3CA] rounded-xl overflow-hidden bg-white">
               <button
                 disabled={!prevOrder}
                 onClick={() => prevOrder && onSelectOrder(prevOrder)}
-                className="p-2 text-[#4E5C52] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                className="p-2 text-[#4E5C52] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer min-h-[38px] min-w-[34px] flex items-center justify-center"
                 title="Previous order"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -292,7 +277,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               <button
                 disabled={!nextOrder}
                 onClick={() => nextOrder && onSelectOrder(nextOrder)}
-                className="p-2 text-[#4E5C52] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                className="p-2 text-[#4E5C52] hover:bg-[#F2F4F2] disabled:opacity-30 disabled:pointer-events-none cursor-pointer min-h-[38px] min-w-[34px] flex items-center justify-center"
                 title="Next order"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -301,54 +286,64 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
           </div>
         </div>
 
-        {/* ------------------------------------------------------------- */}
-        {/* WORKFLOW NAVIGATION: 1. MANAGE ORDER -> 2. UPDATE STATUS */}
-        {/* ------------------------------------------------------------- */}
-        <div className="pt-2 border-t border-[#F0EFEB] flex items-center justify-between">
+        {/* Order Identifier & Placed Time */}
+        <div className="flex items-baseline justify-between pt-1 border-t border-[#F0EFEB]">
           <div className="flex items-center gap-2">
+            <span className="font-mono font-bold text-base sm:text-lg text-[#1A2E23]">
+              #{order.id}
+            </span>
+            <span className="text-[#8B988F]">·</span>
+            <span className="font-semibold text-sm sm:text-base text-[#26382E]">
+              {order.customerName}
+            </span>
+          </div>
+          <span className="font-mono font-bold text-base sm:text-lg text-[#1E3B2F] tabular-nums">
+            {formatKES(order.totalAmount)}
+          </span>
+        </div>
+
+        {/* Mobile Segmented Workflow Tabs: 1. Manage Order -> 2. Update Status */}
+        <div className="pt-2">
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F0F3F1] rounded-xl">
             <button
               onClick={() => setActiveWorkflowStep('MANAGE')}
-              className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 ${
+              className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] touch-manipulation ${
                 activeWorkflowStep === 'MANAGE'
-                  ? 'bg-[#1E3B2F] text-white font-semibold shadow-2xs'
-                  : 'bg-[#F2F5F3] text-[#4A5D51] hover:text-[#182C22]'
+                  ? 'bg-white text-[#182C22] shadow-xs'
+                  : 'text-[#5A6D61] hover:text-[#182C22]'
               }`}
             >
-              <span className="w-4 h-4 rounded-full bg-white/20 text-center text-[10px] leading-4 font-bold">
+              <span className={`w-4 h-4 rounded-full text-center text-[10px] leading-4 font-bold ${
+                activeWorkflowStep === 'MANAGE' ? 'bg-[#182C22] text-white' : 'bg-[#D2DAD4] text-[#44554A]'
+              }`}>
                 1
               </span>
               <span>Manage Order</span>
             </button>
 
-            <ArrowRight className="w-3.5 h-3.5 text-[#A1B0A6]" />
-
             <button
               onClick={() => setActiveWorkflowStep('UPDATE_STATUS')}
-              className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 ${
+              className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] touch-manipulation ${
                 activeWorkflowStep === 'UPDATE_STATUS'
-                  ? 'bg-[#1E3B2F] text-white font-semibold shadow-2xs'
-                  : 'bg-[#F2F5F3] text-[#4A5D51] hover:text-[#182C22]'
+                  ? 'bg-white text-[#182C22] shadow-xs'
+                  : 'text-[#5A6D61] hover:text-[#182C22]'
               }`}
             >
-              <span className="w-4 h-4 rounded-full bg-white/20 text-center text-[10px] leading-4 font-bold">
+              <span className={`w-4 h-4 rounded-full text-center text-[10px] leading-4 font-bold ${
+                activeWorkflowStep === 'UPDATE_STATUS' ? 'bg-[#182C22] text-white' : 'bg-[#D2DAD4] text-[#44554A]'
+              }`}>
                 2
               </span>
               <span>Update Status</span>
             </button>
           </div>
-
-          <span className="text-xs text-[#5D6B62] hidden sm:block">
-            {activeWorkflowStep === 'MANAGE'
-              ? 'Review details, set fee & verify payment'
-              : 'Advance or change order status'}
-          </span>
         </div>
       </div>
 
-      {/* Global Action Feedback Message */}
+      {/* Global Feedback Message */}
       {feedback && (
         <div
-          className={`p-3.5 rounded-xl text-xs flex items-center gap-2 ${
+          className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
             feedback.type === 'success'
               ? 'bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]'
               : 'bg-[#FDF2F2] text-[#9B1C1C] border border-[#F8D7D7]'
@@ -364,382 +359,356 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
       )}
 
       {/* ============================================================= */}
-      {/* STEP 1: MANAGE ORDER PANEL */}
-      {/* (Review items, calculate fee, verify payment, internal notes)  */}
+      {/* STEP 1: MANAGE ORDER (Mobile-First Stacked Layout)            */}
+      {/* Customer & WhatsApp FIRST, then Payment, Fee, Items & Notes   */}
       {/* ============================================================= */}
       {activeWorkflowStep === 'MANAGE' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* Left / Main Column: Items, Fee, Payment & Notes */}
-            <div className="lg:col-span-8 space-y-5">
-              {/* Card 1: Items & Order Totals */}
-              <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-3">
-                  <h3 className="font-display font-medium text-base text-[#182C22]">
-                    Items Ordered ({order.items.length})
-                  </h3>
-                  <span className="text-xs text-[#5D6B62]">
-                    Subtotal: <strong className="text-[#182C22]">{formatKES(order.subtotal)}</strong>
-                  </span>
-                </div>
+        <div className="space-y-4">
+          {/* 1. CUSTOMER & DIRECT WHATSAPP ACTION (TOP PRIORITY ON PHONES) */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-3.5">
+            <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-2.5">
+              <span className="font-display font-medium text-sm text-[#182C22]">
+                Customer & Contact
+              </span>
+              <span className="text-[11px] text-[#5D6B62]">
+                {order.deliveryMethod.replace(/_/g, ' ')}
+              </span>
+            </div>
 
-                {/* Items List */}
-                <div className="divide-y divide-[#F2F0EA]">
-                  {order.items.map((item) => (
-                    <div key={item.id} className="py-3 flex items-center justify-between gap-3 text-xs">
-                      <div className="flex items-center gap-3">
-                        {item.productImage && (
-                          <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="w-12 h-12 rounded-xl object-cover border border-[#E8ECE9]"
-                          />
-                        )}
-                        <div>
-                          <p className="font-semibold text-[#182C22] text-sm">{item.productName}</p>
-                          <p className="text-[#64746A]">
-                            {item.quantity} × {formatKES(item.priceAtPurchase)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="font-mono font-bold text-sm text-[#1A2E23] tabular-nums">
-                        {formatKES(item.priceAtPurchase * item.quantity)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Delivery Transport Fee Calculation */}
-                <div className="p-4 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] space-y-3 pt-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#29362D] mb-1">
-                        Delivery Transport Fee (KSh)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-36">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#7A877E]">
-                            KES
-                          </span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={deliveryFeeInput}
-                            onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                            placeholder="0"
-                            className="w-full pl-11 pr-2.5 py-1.5 text-xs bg-white border border-[#D5D3CA] rounded-lg outline-none font-mono font-medium focus:border-[#20392D]"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          disabled={savingFee}
-                          onClick={handleSaveDeliveryFee}
-                          className="px-3 py-1.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                        >
-                          {savingFee ? 'Saving...' : 'Save Fee'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quick Presets */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-[#64746A]">Presets:</span>
-                      {[
-                        { label: 'Free (0)', fee: 0 },
-                        { label: 'Rider (200)', fee: 200 },
-                        { label: 'Outskirts (350)', fee: 350 },
-                        { label: 'Countrywide (450)', fee: 450 },
-                      ].map((p) => (
-                        <button
-                          key={p.fee}
-                          type="button"
-                          onClick={() => setDeliveryFeeInput(String(p.fee))}
-                          className="px-2 py-1 text-[11px] rounded-md bg-white border border-[#DCDAD2] hover:border-[#20392D] text-[#3D4C42] cursor-pointer"
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Total Summary */}
-                  <div className="border-t border-[#E2E8E4] pt-2 flex items-center justify-between text-xs">
-                    <span className="text-[#556358]">
-                      Products ({formatKES(order.subtotal)}) + Delivery (
-                      {order.deliveryFee !== null ? formatKES(order.deliveryFee) : 'KSh 0'})
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-[#182C22]">Total Due:</span>
-                      <span className="font-mono font-bold text-lg text-[#1E3B2F] tabular-nums">
-                        {formatKES(order.totalAmount)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+            {/* Customer Details & Big Tap Action Buttons */}
+            <div className="space-y-3 text-xs">
+              <div>
+                <p className="font-bold text-base text-[#182C22]">{order.customerName}</p>
+                <p className="font-mono text-xs text-[#5D6B62]">{order.customerPhone}</p>
               </div>
 
-              {/* Card 2: Payment Verification */}
-              <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-3">
-                  <div>
-                    <h3 className="font-display font-medium text-base text-[#182C22]">
-                      M-Pesa Payment Verification
-                    </h3>
-                    <p className="text-xs text-[#5D6B62]">
-                      Check your phone for M-Pesa Till SMS, then mark as paid.
+              {/* Direct Call & WhatsApp Buttons (Generous Touch Targets for Phones) */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <a
+                  href={`tel:${order.customerPhone}`}
+                  className="py-3 px-3 rounded-xl bg-[#F0F4F1] hover:bg-[#E2ECE5] text-[#1E3B2F] font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer min-h-[46px] touch-manipulation active:scale-98"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Call Customer</span>
+                </a>
+
+                <a
+                  href={`https://wa.me/${waPhone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-3 px-3 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer min-h-[46px] touch-manipulation active:scale-98 shadow-2xs"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>WhatsApp</span>
+                </a>
+              </div>
+
+              {/* Delivery Destination */}
+              <div className="pt-2 border-t border-[#F2F0EA] flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-[#245C38] shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-xs text-[#182C22]">{order.deliveryLocation}</p>
+                  {order.orderNotes && (
+                    <p className="text-[11px] text-[#8C6D1F] bg-[#FEF9E7] p-2 rounded-lg mt-1 border border-[#F9E79F]">
+                      Note: {order.orderNotes}
                     </p>
-                  </div>
-                  <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                      order.paymentStatus === 'CONFIRMED'
-                        ? 'bg-[#EBF5EF] text-[#15803D] border-[#C5E1CF]'
-                        : 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
-                    }`}
-                  >
-                    {order.paymentStatus === 'CONFIRMED' ? '✓ PAID' : '⏳ UNPAID'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs items-center">
-                  {/* Left: Till Info & Amount */}
-                  <div className="p-3.5 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#64746A]">Buy Goods Till:</span>
-                      <strong className="font-mono text-sm text-[#1A2E23]">{BUSINESS_CONFIG.mpesaTill}</strong>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#64746A]">Expected Total:</span>
-                      <strong className="font-mono text-sm text-[#1E3B2F]">{formatKES(order.totalAmount)}</strong>
-                    </div>
-                    <div className="flex justify-between items-center text-[11px] text-[#64746A] pt-1 border-t border-[#EAECE9]">
-                      <span>Customer:</span>
-                      <span className="font-medium text-[#1A2E23]">{order.customerName} ({order.customerPhone})</span>
-                    </div>
-                  </div>
-
-                  {/* Right: 1-Click Action or Undo */}
-                  <div className="p-3.5 rounded-xl border border-[#E8ECE9] bg-[#FAFAF8] space-y-2.5">
-                    {order.paymentStatus === 'CONFIRMED' ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[#15803D] font-semibold text-xs">
-                          <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
-                          <span>Payment Confirmed on Till</span>
-                        </div>
-                        <p className="text-[11px] text-[#556358]">
-                          Received {formatKES(order.totalAmount)}.
-                          {order.paymentReference && order.paymentReference !== 'VERIFIED_VIA_SMS' && (
-                            <span className="block font-mono text-[10px] text-[#245C38] mt-0.5">
-                              Ref: {order.paymentReference}
-                            </span>
-                          )}
-                        </p>
-                        <button
-                          type="button"
-                          disabled={savingPayment}
-                          onClick={handleRevertPayment}
-                          className="px-3 py-1.5 rounded-xl border border-[#F2D4D4] bg-white hover:bg-[#FDF2F2] text-[#9B1C1C] text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
-                          title="Undo payment status and restore stock"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          <span>{savingPayment ? 'Reverting...' : 'Undo — Mark as Unpaid'}</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-[11px] text-[#556358] leading-relaxed">
-                          Check your phone for Till SMS of <strong className="text-[#1A2E23]">{formatKES(order.totalAmount)}</strong>. Once received:
-                        </p>
-                        <button
-                          type="button"
-                          disabled={savingPayment}
-                          onClick={handleConfirmPayment}
-                          className="w-full py-2.5 px-4 bg-[#15803D] hover:bg-[#126631] disabled:bg-[#8F9E94] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-2xs"
-                        >
-                          <Check className="w-4 h-4" />
-                          <span>{savingPayment ? 'Marking as Paid...' : 'Mark as Paid'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Optional Note / Code accordion */}
-                <div className="pt-2 border-t border-[#F2F0EA] flex items-center justify-between text-xs">
-                  {!showManualRefInput && !order.paymentReference ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowManualRefInput(true)}
-                      className="text-[11px] text-[#556358] hover:text-[#182C22] underline cursor-pointer"
-                    >
-                      + Optional: Record reference code
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2 max-w-sm w-full">
-                      <input
-                        type="text"
-                        value={paymentRefInput}
-                        onChange={(e) => setPaymentRefInput(e.target.value.toUpperCase())}
-                        placeholder="Optional code (e.g. QJK8912P4)"
-                        className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#D5D3CA] rounded-lg outline-none font-mono uppercase text-[#182C22]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleConfirmPayment();
-                          setShowManualRefInput(false);
-                        }}
-                        className="px-3 py-1.5 bg-[#20392D] text-white text-xs font-medium rounded-lg hover:bg-[#162920] cursor-pointer"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  )}
-                  {order.paymentStatus === 'CONFIRMED' && (
-                    <span className="text-[11px] text-[#64746A]">Payment can be undone anytime</span>
                   )}
                 </div>
-              </div>
-
-              {/* Card 3: Internal Fulfillment Notes */}
-              <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display font-medium text-base text-[#182C22]">
-                    Internal Fulfillment & Logistics Notes
-                  </h3>
-                  <button
-                    type="button"
-                    disabled={savingNotes}
-                    onClick={handleSaveNotes}
-                    className="text-xs font-medium text-[#245C38] hover:underline cursor-pointer"
-                  >
-                    {savingNotes ? 'Saving...' : 'Save Notes'}
-                  </button>
-                </div>
-                <textarea
-                  rows={2}
-                  value={adminNotesInput}
-                  onChange={(e) => setAdminNotesInput(e.target.value)}
-                  placeholder="e.g. Bolt Rider John (0712345678) assigned. Package packed with fragile seal."
-                  className="w-full p-2.5 text-xs bg-[#F8FAF8] border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D]"
-                />
               </div>
             </div>
 
-            {/* Right Column: Customer Info & WhatsApp */}
-            <div className="lg:col-span-4 space-y-5">
-              {/* Card 4: Customer Details */}
-              <div className="bg-white rounded-2xl border border-[#E2E6E3] p-5 shadow-2xs space-y-4">
-                <h3 className="font-display font-medium text-base text-[#182C22] border-b border-[#F0EFEB] pb-3">
-                  Customer Information
-                </h3>
+            {/* 1-Click Pre-filled WhatsApp Shortcuts */}
+            <div className="pt-2 border-t border-[#F0EFEB] space-y-1.5">
+              <span className="text-[11px] font-semibold text-[#3D4C42] uppercase tracking-wide block mb-1">
+                1-Click WhatsApp Quick Messages:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                <a
+                  href={buildAdminCustomerWhatsAppUrl(order, 'DELIVERY_QUOTE')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2.5 px-3 rounded-xl bg-[#F4F9F6] border border-[#C5E1CF] hover:bg-[#EBF5EF] text-[#1B5E20] font-medium text-xs flex items-center justify-between min-h-[42px] touch-manipulation"
+                >
+                  <span>1. Payment Request & Till</span>
+                  <Send className="w-3.5 h-3.5 opacity-70" />
+                </a>
 
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="text-[#64746A] block mb-0.5">Customer Name:</span>
-                    <span className="font-semibold text-sm text-[#182C22]">{order.customerName}</span>
-                  </div>
+                <a
+                  href={buildAdminCustomerWhatsAppUrl(order, 'PAYMENT_CONFIRMED')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2.5 px-3 rounded-xl bg-[#F4F9F6] border border-[#C5E1CF] hover:bg-[#EBF5EF] text-[#1B5E20] font-medium text-xs flex items-center justify-between min-h-[42px] touch-manipulation"
+                >
+                  <span>2. Payment Receipt</span>
+                  <Send className="w-3.5 h-3.5 opacity-70" />
+                </a>
 
-                  <div>
-                    <span className="text-[#64746A] block mb-0.5">Phone Number:</span>
-                    <span className="font-mono text-sm text-[#182C22]">{order.customerPhone}</span>
-                    <div className="flex items-center gap-2 mt-2">
-                      <a
-                        href={`tel:${order.customerPhone}`}
-                        className="flex-1 py-1.5 px-3 rounded-lg bg-[#F0F4F1] hover:bg-[#E2ECE5] text-[#1E3B2F] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                        <span>Call Phone</span>
-                      </a>
-                      <a
-                        href={`https://wa.me/${waPhone}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 py-1.5 px-3 rounded-lg bg-[#EBF5EF] hover:bg-[#D5ECD7] text-[#1B5E20] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-[#F2F0EA] pt-2">
-                    <span className="text-[#64746A] block mb-0.5">Delivery Destination:</span>
-                    <p className="font-medium text-[#182C22] flex items-start gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#245C38] shrink-0 mt-0.5" />
-                      <span>{order.deliveryLocation}</span>
-                    </p>
-                    <p className="text-[11px] text-[#64746A] pl-5 mt-0.5">
-                      Method: <strong>{order.deliveryMethod.replace(/_/g, ' ')}</strong>
-                    </p>
-                  </div>
-
-                  {order.orderNotes && (
-                    <div className="p-3 rounded-xl bg-[#FEF9E7] border border-[#F9E79F] text-[#7D6608] text-xs">
-                      <strong>Customer Instructions:</strong>
-                      <p className="mt-0.5">{order.orderNotes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Card 5: 1-Click WhatsApp Notifications */}
-              <div className="bg-[#EBF5EF] rounded-2xl border border-[#C5E1CF] p-5 space-y-3">
-                <div className="flex items-center gap-2 text-[#245C38]">
-                  <MessageCircle className="w-4 h-4 text-[#245C38]" />
-                  <h4 className="font-semibold text-xs uppercase tracking-wide">
-                    1-Click WhatsApp Messages
-                  </h4>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <a
-                    href={buildAdminCustomerWhatsAppUrl(order, 'DELIVERY_QUOTE')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#F2F7F4] border border-[#C5E1CF] text-[#1B5E20] font-medium text-xs flex items-center justify-between transition-colors shadow-2xs"
-                  >
-                    <span>1. Send Quote & Payment Till</span>
-                    <Send className="w-3 h-3 opacity-70" />
-                  </a>
-
-                  <a
-                    href={buildAdminCustomerWhatsAppUrl(order, 'PAYMENT_CONFIRMED')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#F2F7F4] border border-[#C5E1CF] text-[#1B5E20] font-medium text-xs flex items-center justify-between transition-colors shadow-2xs"
-                  >
-                    <span>2. Send Payment Receipt</span>
-                    <Send className="w-3 h-3 opacity-70" />
-                  </a>
-
-                  <a
-                    href={buildAdminCustomerWhatsAppUrl(order, 'DISPATCHED')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#F2F7F4] border border-[#C5E1CF] text-[#1B5E20] font-medium text-xs flex items-center justify-between transition-colors shadow-2xs"
-                  >
-                    <span>3. Send Rider Dispatch Alert</span>
-                    <Send className="w-3 h-3 opacity-70" />
-                  </a>
-                </div>
+                <a
+                  href={buildAdminCustomerWhatsAppUrl(order, 'DISPATCHED')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2.5 px-3 rounded-xl bg-[#F4F9F6] border border-[#C5E1CF] hover:bg-[#EBF5EF] text-[#1B5E20] font-medium text-xs flex items-center justify-between min-h-[42px] touch-manipulation"
+                >
+                  <span>3. Dispatch & Rider Alert</span>
+                  <Send className="w-3.5 h-3.5 opacity-70" />
+                </a>
               </div>
             </div>
           </div>
 
-          {/* Advancement Callout Bar to Step 2 */}
-          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-            <div>
-              <p className="font-semibold text-sm text-[#182C22]">
-                Done reviewing and managing this order?
-              </p>
-              <p className="text-xs text-[#5D6B62]">
-                Proceed to Update Status to advance this order to its next fulfillment stage.
-              </p>
+          {/* 2. PAYMENT VERIFICATION (Check SMS & Mark Paid) */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-3.5">
+            <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-2.5">
+              <div>
+                <span className="font-display font-medium text-sm text-[#182C22] block">
+                  M-Pesa Payment Verification
+                </span>
+                <span className="text-[11px] text-[#5D6B62]">
+                  Till: <strong>{BUSINESS_CONFIG.mpesaTill}</strong>
+                </span>
+              </div>
+              <span
+                className={`text-xs font-bold px-2.5 py-1 rounded-xl border ${
+                  order.paymentStatus === 'CONFIRMED'
+                    ? 'bg-[#EBF5EF] text-[#15803D] border-[#C5E1CF]'
+                    : 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]'
+                }`}
+              >
+                {order.paymentStatus === 'CONFIRMED' ? '✓ PAID' : '⏳ UNPAID'}
+              </span>
             </div>
 
+            {/* Payment State & Single-Tap Action */}
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-[#F8FAF8] border border-[#E8ECE9] flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[#64746A] block text-[11px]">Amount Due:</span>
+                  <span className="font-mono font-bold text-base text-[#1E3B2F] tabular-nums">
+                    {formatKES(order.totalAmount)}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[#64746A] block text-[11px]">Customer:</span>
+                  <span className="font-medium text-[#182C22]">{order.customerPhone}</span>
+                </div>
+              </div>
+
+              {order.paymentStatus === 'CONFIRMED' ? (
+                <div className="p-3.5 rounded-xl border border-[#C5E1CF] bg-[#F4F9F6] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-[#15803D] shrink-0" />
+                    <div>
+                      <p className="font-bold text-xs text-[#15803D]">Payment Verified on Till</p>
+                      <p className="text-[11px] text-[#556358]">
+                        Remedies ready for packing.
+                        {order.paymentReference && order.paymentReference !== 'VERIFIED_VIA_SMS' && (
+                          <span className="font-mono ml-1 text-[#15803D]">({order.paymentReference})</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Undo Button */}
+                  <button
+                    type="button"
+                    disabled={savingPayment}
+                    onClick={handleRevertPayment}
+                    className="py-2.5 px-3.5 rounded-xl border border-[#F2D4D4] bg-white hover:bg-[#FDF2F2] text-[#9B1C1C] text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-h-[42px] touch-manipulation active:scale-98"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>{savingPayment ? 'Reverting...' : 'Undo — Mark as Unpaid'}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-[#556358] leading-relaxed">
+                    Check your phone for M-Pesa Till SMS of <strong className="text-[#1A2E23]">{formatKES(order.totalAmount)}</strong>. Once received:
+                  </p>
+                  {/* Big Generous Touch Target Button for Phone Screen */}
+                  <button
+                    type="button"
+                    disabled={savingPayment}
+                    onClick={handleConfirmPayment}
+                    className="w-full py-3.5 px-4 bg-[#15803D] hover:bg-[#126631] disabled:bg-[#8F9E94] text-white text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-2xs min-h-[48px] touch-manipulation active:scale-98"
+                  >
+                    <Check className="w-5 h-5" />
+                    <span>{savingPayment ? 'Marking as Paid...' : '✓ Mark as Paid'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Optional Code accordion */}
+              <div className="pt-1">
+                {!showManualRefInput && !order.paymentReference ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowManualRefInput(true)}
+                    className="text-[11px] text-[#556358] hover:text-[#182C22] underline cursor-pointer"
+                  >
+                    + Optional: Record reference code
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={paymentRefInput}
+                      onChange={(e) => setPaymentRefInput(e.target.value.toUpperCase())}
+                      placeholder="Optional code (e.g. QJK8912P4)"
+                      className="flex-1 px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono uppercase text-[#182C22] min-h-[38px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleConfirmPayment();
+                        setShowManualRefInput(false);
+                      }}
+                      className="px-3.5 py-2 bg-[#20392D] text-white text-xs font-semibold rounded-xl hover:bg-[#162920] cursor-pointer min-h-[38px]"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. DELIVERY TRANSPORT FEE */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-2.5">
+              <span className="font-display font-medium text-sm text-[#182C22]">
+                Delivery Transport Fee
+              </span>
+              <span className="text-xs text-[#5D6B62]">
+                {order.deliveryFee !== null ? formatKES(order.deliveryFee) : 'Not Set'}
+              </span>
+            </div>
+
+            {/* Presets Grid for Mobile (Generous Tap Targets) */}
+            <div>
+              <label className="block text-[11px] text-[#556358] mb-1.5 font-medium">
+                Quick Fee Presets:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {[
+                  { label: 'Free (0)', fee: 0 },
+                  { label: 'Rider (200)', fee: 200 },
+                  { label: 'Outskirts (350)', fee: 350 },
+                  { label: 'Courier (450)', fee: 450 },
+                ].map((p) => (
+                  <button
+                    key={p.fee}
+                    type="button"
+                    onClick={() => setDeliveryFeeInput(String(p.fee))}
+                    className="py-2 px-2 text-xs rounded-xl bg-[#F8FAF8] border border-[#DCDAD2] hover:border-[#20392D] text-[#3D4C42] font-medium cursor-pointer min-h-[38px] touch-manipulation active:scale-95 text-center"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Input + Save Button */}
+            <div className="flex items-center gap-2 pt-1">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-[#7A877E]">
+                  KES
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={deliveryFeeInput}
+                  onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                  placeholder="0"
+                  className="w-full pl-12 pr-3 py-2.5 text-sm bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono font-bold focus:border-[#20392D] min-h-[42px]"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={savingFee}
+                onClick={handleSaveDeliveryFee}
+                className="px-5 py-2.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer min-h-[42px] touch-manipulation active:scale-95"
+              >
+                {savingFee ? 'Saving...' : 'Save Fee'}
+              </button>
+            </div>
+          </div>
+
+          {/* 4. ITEMS ORDERED & TOTAL */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-2.5">
+              <span className="font-display font-medium text-sm text-[#182C22]">
+                Items Ordered ({order.items.length})
+              </span>
+              <span className="text-xs text-[#5D6B62]">
+                Subtotal: <strong>{formatKES(order.subtotal)}</strong>
+              </span>
+            </div>
+
+            <div className="divide-y divide-[#F2F0EA]">
+              {order.items.map((item) => (
+                <div key={item.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    {item.productImage && (
+                      <img
+                        src={item.productImage}
+                        alt={item.productName}
+                        className="w-11 h-11 rounded-xl object-cover border border-[#E8ECE9] shrink-0"
+                      />
+                    )}
+                    <div>
+                      <p className="font-semibold text-[#182C22] text-xs sm:text-sm">{item.productName}</p>
+                      <p className="text-[#64746A] text-[11px]">
+                        {item.quantity} × {formatKES(item.priceAtPurchase)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="font-mono font-bold text-xs sm:text-sm text-[#1A2E23] tabular-nums shrink-0">
+                    {formatKES(item.priceAtPurchase * item.quantity)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Recap */}
+            <div className="pt-2 border-t border-[#F2F0EA] flex items-center justify-between text-xs">
+              <span className="text-[#64746A]">
+                Total ({formatKES(order.subtotal)} + {order.deliveryFee !== null ? formatKES(order.deliveryFee) : '0'}):
+              </span>
+              <span className="font-mono font-bold text-base text-[#1E3B2F] tabular-nums">
+                {formatKES(order.totalAmount)}
+              </span>
+            </div>
+          </div>
+
+          {/* 5. INTERNAL NOTES */}
+          <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-5 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="font-display font-medium text-sm text-[#182C22]">
+                Internal Notes & Courier Info
+              </span>
+              <button
+                type="button"
+                disabled={savingNotes}
+                onClick={handleSaveNotes}
+                className="text-xs font-semibold text-[#245C38] hover:underline cursor-pointer"
+              >
+                {savingNotes ? 'Saving...' : 'Save Notes'}
+              </button>
+            </div>
+            <textarea
+              rows={2}
+              value={adminNotesInput}
+              onChange={(e) => setAdminNotesInput(e.target.value)}
+              placeholder="e.g. Bolt Rider John (0712345678) assigned. Pack with dosing spoon."
+              className="w-full p-2.5 text-xs bg-[#F8FAF8] border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D]"
+            />
+          </div>
+
+          {/* Advancement Button to Step 2 (Prominent) */}
+          <div className="pt-2">
             <button
               onClick={() => setActiveWorkflowStep('UPDATE_STATUS')}
-              className="px-5 py-2.5 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer inline-flex items-center justify-center gap-2 shadow-xs"
+              className="w-full py-3.5 px-4 bg-[#20392D] hover:bg-[#162920] text-white text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs min-h-[48px] touch-manipulation active:scale-98"
             >
               <span>Proceed to Update Status</span>
               <ArrowRight className="w-4 h-4" />
@@ -749,63 +718,46 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
       )}
 
       {/* ============================================================= */}
-      {/* STEP 2: UPDATE STATUS PANEL (Separated from Manage Order)     */}
+      {/* STEP 2: UPDATE STATUS (Large Touch Cards for Phones)          */}
       {/* ============================================================= */}
       {activeWorkflowStep === 'UPDATE_STATUS' && (
-        <div className="bg-white rounded-2xl border border-[#E2E6E3] p-6 shadow-2xs space-y-6 animate-in fade-in duration-150 max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-4">
+        <div className="bg-white rounded-2xl border border-[#E2E6E3] p-4 sm:p-6 shadow-2xs space-y-4 max-w-3xl mx-auto">
+          <div className="flex items-center justify-between border-b border-[#F0EFEB] pb-3">
             <div>
-              <span className="text-xs font-semibold text-[#245C38] uppercase tracking-wider block mb-1">
+              <span className="text-[10px] font-bold text-[#245C38] uppercase tracking-wider block">
                 Workflow Step 2 of 2
               </span>
-              <h3 className="font-display font-medium text-xl text-[#182C22]">
+              <h3 className="font-display font-medium text-lg text-[#182C22]">
                 Update Order Status
               </h3>
-              <p className="text-xs text-[#5D6B62]">
-                Select the new stage for Order #{order.id} ({order.customerName}).
-              </p>
             </div>
-
             <button
               onClick={() => setActiveWorkflowStep('MANAGE')}
-              className="text-xs font-medium text-[#4E5C52] hover:text-[#182C22] px-3 py-1.5 rounded-xl border border-[#D5D3CA] hover:bg-[#F8FAF8] transition-colors cursor-pointer"
+              className="text-xs font-semibold text-[#4E5C52] px-3 py-1.5 rounded-xl border border-[#D5D3CA] hover:bg-[#F8FAF8] cursor-pointer min-h-[36px]"
             >
-              ← Back to Manage Order
+              ← Manage
             </button>
           </div>
 
-          {/* Current Status Info Box */}
-          <div className="p-4 rounded-xl bg-[#F6F8F6] border border-[#E2E8E4] flex items-center justify-between text-xs">
+          {/* Current State Info */}
+          <div className="p-3 rounded-xl bg-[#F6F8F6] border border-[#E2E8E4] flex items-center justify-between text-xs">
             <div>
-              <span className="text-[#64746A] block">Current Stage:</span>
-              <strong className="text-sm font-semibold text-[#182C22]">
-                {currentStatusDef.label}
-              </strong>
+              <span className="text-[#64746A] block text-[10px]">Current:</span>
+              <strong className="text-xs font-bold text-[#182C22]">{currentStatusDef.label}</strong>
             </div>
-            <div>
-              <span className="text-[#64746A] block">Payment State:</span>
-              <span
-                className={`font-semibold ${
-                  order.paymentStatus === 'CONFIRMED' ? 'text-[#15803D]' : 'text-[#B45309]'
-                }`}
-              >
-                {order.paymentStatus}
-              </span>
-            </div>
-            <div>
-              <span className="text-[#64746A] block">Total Amount:</span>
-              <span className="font-mono font-bold text-[#1E3B2F]">{formatKES(order.totalAmount)}</span>
+            <div className="text-right">
+              <span className="text-[#64746A] block text-[10px]">Total:</span>
+              <span className="font-mono font-bold text-xs text-[#1E3B2F]">{formatKES(order.totalAmount)}</span>
             </div>
           </div>
 
-          {/* Select New Stage Cards */}
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold text-[#29362D] uppercase tracking-wider">
-              Choose New Status:
-            </label>
+          {/* Status Selection Cards (Phone Ergonomics: High Tap Target) */}
+          <div className="space-y-2">
+            <span className="block text-[11px] font-bold text-[#3D4C42] uppercase tracking-wider">
+              Select New Stage:
+            </span>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
               {STATUS_DEFINITIONS.map((def) => {
                 const isSelected = targetStatus === def.status;
                 const isCurrent = order.status === def.status;
@@ -813,33 +765,33 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
                   <div
                     key={def.status}
                     onClick={() => setTargetStatus(def.status)}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer min-h-[52px] touch-manipulation active:scale-98 ${
                       isSelected
                         ? 'border-[#20392D] bg-[#F4F9F6] ring-1 ring-[#20392D]'
                         : 'border-[#E6E4DD] hover:border-[#CCD5CE] bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-semibold text-xs text-[#182C22] flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
                         <span
-                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
                             isSelected
                               ? 'border-[#20392D] bg-[#20392D] text-white'
                               : 'border-[#C2C9C4] bg-white'
                           }`}
                         >
-                          {isSelected && <Check className="w-2.5 h-2.5" />}
+                          {isSelected && <Check className="w-3 h-3" />}
                         </span>
-                        <span>{def.label}</span>
-                      </span>
+                        <span className="font-semibold text-xs text-[#182C22]">{def.label}</span>
+                      </div>
 
                       {isCurrent && (
-                        <span className="text-[10px] uppercase font-bold text-[#556358] bg-[#EAE8E1] px-1.5 py-0.2 rounded">
+                        <span className="text-[10px] uppercase font-bold text-[#556358] bg-[#EAE8E1] px-1.5 py-0.2 rounded shrink-0">
                           Current
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-[#5D6B62] pl-5.5 leading-relaxed">
+                    <p className="text-[11px] text-[#5D6B62] pl-6.5 mt-0.5 leading-snug">
                       {def.description}
                     </p>
                   </div>
@@ -848,26 +800,26 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
             </div>
           </div>
 
-          {/* Optional Status Change Note */}
-          <div className="space-y-1.5 pt-2">
+          {/* Optional Note */}
+          <div className="space-y-1 pt-1">
             <label className="block text-xs font-medium text-[#3A463D]">
-              Status Update Note (Optional):
+              Status Note (Optional):
             </label>
             <input
               type="text"
               value={statusChangeNotes}
               onChange={(e) => setStatusChangeNotes(e.target.value)}
-              placeholder="e.g. Verified M-Pesa till payment, moving to packaging"
-              className="w-full px-3.5 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D] text-[#182C22]"
+              placeholder="e.g. Dispatched with Bolt rider"
+              className="w-full px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none text-[#182C22] min-h-[40px]"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#F0EFEB]">
+          <div className="flex items-center justify-between pt-3 border-t border-[#F0EFEB] gap-2">
             <button
               type="button"
               onClick={() => setActiveWorkflowStep('MANAGE')}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-[#4E5C52] hover:bg-[#F2F4F2] transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#4E5C52] hover:bg-[#F2F4F2] cursor-pointer min-h-[44px]"
             >
               Cancel
             </button>
@@ -876,14 +828,62 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               type="button"
               disabled={savingStatus}
               onClick={handleApplyStatusUpdate}
-              className="px-6 py-2.5 bg-[#20392D] hover:bg-[#162920] disabled:bg-[#8F9E94] text-white text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+              className="flex-1 sm:flex-initial px-5 py-3 bg-[#20392D] hover:bg-[#162920] disabled:bg-[#8F9E94] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[46px] shadow-xs touch-manipulation active:scale-98"
             >
               <Check className="w-4 h-4" />
-              <span>{savingStatus ? 'Applying Update...' : 'Confirm & Apply Status Update'}</span>
+              <span>{savingStatus ? 'Applying...' : 'Confirm Status Update'}</span>
             </button>
           </div>
         </div>
       )}
+
+      {/* ============================================================= */}
+      {/* 6. STICKY MOBILE BOTTOM BAR (Always In Thumb Zone)            */}
+      {/* ============================================================= */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#E2E6E3] px-4 py-2.5 sm:hidden shadow-lg">
+        <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+          {/* Quick WhatsApp button */}
+          <a
+            href={`https://wa.me/${waPhone}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2.5 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 min-w-[42px] min-h-[42px] shadow-2xs active:scale-95"
+            title="Chat on WhatsApp"
+          >
+            <MessageCircle className="w-5 h-5" />
+          </a>
+
+          {/* Middle: Order Status & Amount */}
+          <div className="flex-1 truncate">
+            <span className="font-mono font-bold text-sm text-[#182C22] tabular-nums block">
+              {formatKES(order.totalAmount)}
+            </span>
+            <span className="text-[10px] text-[#556358] truncate block">
+              #{order.id} · {currentStatusDef.label}
+            </span>
+          </div>
+
+          {/* Primary Action Button */}
+          {activeWorkflowStep === 'MANAGE' ? (
+            <button
+              onClick={() => setActiveWorkflowStep('UPDATE_STATUS')}
+              className="py-2.5 px-4 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 min-h-[42px] shrink-0 active:scale-95"
+            >
+              <span>Update Status</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              onClick={handleApplyStatusUpdate}
+              disabled={savingStatus}
+              className="py-2.5 px-4 bg-[#20392D] hover:bg-[#162920] disabled:bg-[#8F9E94] text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 min-h-[42px] shrink-0 active:scale-95"
+            >
+              <span>Confirm</span>
+              <Check className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
