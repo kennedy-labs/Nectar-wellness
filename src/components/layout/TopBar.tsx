@@ -22,16 +22,21 @@ export const TopBar: React.FC<TopBarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#FAFAF7]/95 backdrop-blur-md border-b border-[#E8E6DF] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
-        {/* Zone 1: Single text element wordmark in display face */}
+        {/* Zone 1: Brand emblem and wordmark */}
         <a
           href="/"
           onClick={(e) => {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="font-display text-xl sm:text-2xl text-[#1E3B2F] tracking-tight hover:opacity-90 transition-opacity whitespace-nowrap"
+          className="flex items-center gap-2.5 font-display text-xl sm:text-2xl text-[#1E3B2F] tracking-tight hover:opacity-90 transition-opacity whitespace-nowrap"
         >
-          Nature’s Nectar
+          <img
+            src="/favicon.svg"
+            alt="Nature's Nectar Wellness"
+            className="w-8 h-8 rounded-full shadow-2xs"
+          />
+          <span>Nature’s Nectar</span>
         </a>
 
         {/* Zone 2: 4 clean text links with subtle hover states */}

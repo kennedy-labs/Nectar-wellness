@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="nectarGrad" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="35%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </radialGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="60%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep Forest Apothecary Circle -->
+  <circle cx="50" cy="50" r="48" fill="#182C22" />
+  <circle cx="50" cy="50" r="44" fill="none" stroke="url(#ringGrad)" stroke-width="2.5" opacity="0.85" />
+
+  <!-- Golden Nectar Droplet Shape -->
+  <path
+    d="M 50 18 C 50 18, 26 48, 26 63 C 26 76.5, 36.8 84, 50 84 C 63.2 84, 74 76.5, 74 63 C 74 48, 50 18, 50 18 Z"
+    fill="url(#nectarGrad)"
+  />
+
+  <!-- Organic Botanical Leaf inside Droplet -->
+  <path
+    d="M 50 38 C 43 48, 38 58, 41 68 C 43 75, 49 77, 52 75 C 57 72, 61 63, 58 52 C 55 44, 50 38, 50 38 Z"
+    fill="url(#leafGrad)"
+  />
+
+  <!-- Leaf Central Vein -->
+  <path
+    d="M 50 40 Q 48 56 49 71"
+    fill="none"
+    stroke="#D1FAE5"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    opacity="0.8"
+  />
+
+  <!-- Sunlit Glisten Highlight -->
+  <ellipse cx="40" cy="40" rx="3" ry="6" transform="rotate(-25 40 40)" fill="#FFFFFF" opacity="0.6" />
+</svg>

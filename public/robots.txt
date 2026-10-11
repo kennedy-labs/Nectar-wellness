@@ -1,0 +1,7 @@
+# Nature's Nectar Wellness Robots File
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/admin/
+
+Sitemap: /sitemap.xml

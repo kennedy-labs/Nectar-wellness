@@ -1,0 +1,22 @@
+{
+  "name": "Nature's Nectar Wellness",
+  "short_name": "Nature's Nectar",
+  "description": "Small-batch botanical apothecary providing authentic Shilajit, Moringa, and pure herbal remedies in Nairobi, Kenya.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF7",
+  "theme_color": "#182C22",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg"
+    }
+  ]
+}
