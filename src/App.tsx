@@ -104,8 +104,16 @@ export default function App() {
       setCart(storage.getCart());
       setIsAdminLoggedIn(storage.isAdminLoggedIn());
 
-      const lastId = storage.getLastOrderId();
-      if (lastId) setTrackOrderId(lastId);
+      // Check if user came from a WhatsApp tracking link (?track=NNW-XXXX)
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackParam = urlParams.get('track');
+      if (trackParam) {
+        setTrackOrderId(trackParam);
+        setIsTrackOpen(true);
+      } else {
+        const lastId = storage.getLastOrderId();
+        if (lastId) setTrackOrderId(lastId);
+      }
     }
     loadInitialData();
   }, []);

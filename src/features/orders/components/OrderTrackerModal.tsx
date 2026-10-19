@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<
   },
   AWAITING_PAYMENT: {
     label: 'Awaiting M-Pesa Payment',
-    description: 'Delivery cost confirmed. Please complete payment via Till 9823412.',
+    description: `Delivery cost confirmed. Please complete payment via Till ${BUSINESS_CONFIG.mpesaTill}.`,
     step: 3,
   },
   PAID: {

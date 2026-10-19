@@ -1,7 +1,15 @@
 import { BUSINESS_CONFIG } from '../config/constants';
 import { Order, Product } from '../types';
 
+function getStoreBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin;
+  }
+  return 'https://nectar-wellness.onrender.com';
+}
+
 export function buildWhatsAppOrderUrl(order: Order): string {
+  const baseUrl = getStoreBaseUrl();
   const itemsText = order.items
     .map(
       (item) =>
@@ -33,28 +41,38 @@ ${itemsText}
 *Products Subtotal:* KSh ${order.subtotal.toLocaleString()}
 ${
   order.deliveryFee !== null
-    ? `*Delivery Fee:* KSh ${order.deliveryFee.toLocaleString()}\n*Total:* KSh ${order.totalAmount.toLocaleString()}`
-    : `*Delivery Fee:* (Awaiting manual confirmation based on location)`
+    ? `*Delivery Fee:* KSh ${order.deliveryFee.toLocaleString()}\n*Total Due:* KSh ${order.totalAmount.toLocaleString()}`
+    : `*Delivery Fee:* (Awaiting route review)`
 }
 *Payment Preference:* ${order.paymentMethod.replace(/_/g, ' ')}
 
-Kindly confirm delivery cost and total to finalize. Asante sana!`;
+🔍 *Track order online:*
+${baseUrl}/?track=${order.id}
+
+Kindly confirm delivery transport fee and total to finalize. Asante sana!`;
 
   return `https://wa.me/${BUSINESS_CONFIG.whatsappPhoneDigits}?text=${encodeURIComponent(text)}`;
 }
 
 export function buildWhatsAppProductInquiryUrl(product: Product): string {
+  const baseUrl = getStoreBaseUrl();
   const text = `Habari Nature’s Nectar Wellness! 🌿
 
 I am inquiring about *${product.name}* (KSh ${product.price.toLocaleString()}).
+Link: ${baseUrl}/#apothecary-remedies
 
-Could you kindly advise on recommended usage, benefits, and current shop availability?`;
+Could you kindly advise on recommended usage, benefits, and current shop availability? Asante!`;
 
   return `https://wa.me/${BUSINESS_CONFIG.whatsappPhoneDigits}?text=${encodeURIComponent(text)}`;
 }
 
-export function buildAdminCustomerWhatsAppUrl(order: Order, updateType: 'DELIVERY_QUOTE' | 'PAYMENT_CONFIRMED' | 'DISPATCHED'): string {
-  // Clean phone number: remove leading 0 and add 254 if not present
+export function buildAdminCustomerWhatsAppUrl(
+  order: Order,
+  updateType: 'DELIVERY_QUOTE' | 'PAYMENT_CONFIRMED' | 'DISPATCHED'
+): string {
+  const baseUrl = getStoreBaseUrl();
+
+  // Clean phone number: remove non-digits, ensure 254 prefix for Kenya
   let cleanPhone = order.customerPhone.replace(/[^0-9]/g, '');
   if (cleanPhone.startsWith('0')) {
     cleanPhone = '254' + cleanPhone.slice(1);
@@ -66,24 +84,42 @@ export function buildAdminCustomerWhatsAppUrl(order: Order, updateType: 'DELIVER
   if (updateType === 'DELIVERY_QUOTE') {
     text = `Habari ${order.customerName}! 🌿 Nature’s Nectar Wellness here regarding your Order #${order.id}.
 
-We have reviewed your delivery to ${order.deliveryLocation}.
-• Products Subtotal: KSh ${order.subtotal.toLocaleString()}
-• Delivery Fee: KSh ${(order.deliveryFee || 0).toLocaleString()}
-*Total Amount Due:* KSh ${order.totalAmount.toLocaleString()}
+We have reviewed your delivery route to *${order.deliveryLocation}*:
+• Remedies Subtotal: KSh ${order.subtotal.toLocaleString()}
+• Transport / Delivery Fee: KSh ${(order.deliveryFee || 0).toLocaleString()}
+👉 *Total Amount Due: KSh ${order.totalAmount.toLocaleString()}*
 
-Payment via M-Pesa Buy Goods:
-Till Number: ${BUSINESS_CONFIG.mpesaTill}
-Name: ${BUSINESS_CONFIG.mpesaStoreName}
+💳 *Lipa na M-Pesa (Buy Goods Till)*
+Till Number: *${BUSINESS_CONFIG.mpesaTill}*
+Store Name: ${BUSINESS_CONFIG.mpesaStoreName}
+*(You can copy just the Till digits above)*
 
-Once sent, kindly share the M-Pesa confirmation code here so we can prepare your dispatch. Asante!`;
+📍 *Speed up dispatch:* Kindly reply with your WhatsApp Live Location pin or landmark for the rider.
+
+🔍 *Live Order Tracker:*
+${baseUrl}/?track=${order.id}
+
+Asante sana for choosing natural remedies!`;
   } else if (updateType === 'PAYMENT_CONFIRMED') {
-    text = `Habari ${order.customerName}! 🌿 We have received your payment of KSh ${order.totalAmount.toLocaleString()} for Order #${order.id}.
+    text = `Habari ${order.customerName}! 🌿 Payment Confirmed for Order #${order.id}.
 
-Your herbal wellness package is now being carefully prepared at our apothecary. We will update you with rider/courier tracking details shortly!`;
+✅ We have confirmed receipt of *KSh ${order.totalAmount.toLocaleString()}* on our Till.
+
+🌿 Your herbal wellness remedies are now being carefully prepared and packaged in our apothecary.
+
+🔍 *Track order progress live:*
+${baseUrl}/?track=${order.id}
+
+We will share rider/courier tracking details shortly!`;
   } else {
-    text = `Habari ${order.customerName}! 🌿 Your Nature’s Nectar order #${order.id} is now on its way to you (${order.deliveryLocation}).
+    text = `Habari ${order.customerName}! 🌿 Order #${order.id} is Dispatched & On The Way!
 
-Delivery method: ${order.deliveryMethod.replace(/_/g, ' ')}.
+🛵 Your herbal remedies package has been handed over to the courier for delivery to *${order.deliveryLocation}*.
+Delivery Method: ${order.deliveryMethod.replace(/_/g, ' ')}.
+${order.adminNotes ? `Courier Note: ${order.adminNotes}\n` : ''}
+🔍 *Track delivery status live:*
+${baseUrl}/?track=${order.id}
+
 Please let us know once you safely receive your package. Wishing you vibrant health!`;
   }
 
