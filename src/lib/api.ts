@@ -199,20 +199,23 @@ export const api = {
     });
 
     const subtotal = orderItems.reduce((acc, item) => acc + item.priceAtPurchase * item.quantity, 0);
-    const isPickup = dto.deliveryMethod === 'PICKUP';
+    const deliveryMethod = dto.deliveryMethod || 'NAIROBI_LOCAL';
+    const isPickup = deliveryMethod === 'PICKUP';
     const order: Order = {
       id: `NNW-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName: dto.customerName,
-      customerPhone: dto.customerPhone,
-      customerEmail: dto.customerEmail,
-      deliveryMethod: dto.deliveryMethod,
-      deliveryLocation: dto.deliveryLocation,
-      orderNotes: dto.orderNotes,
+      customerName: dto.customerName?.trim() || 'WhatsApp Customer',
+      customerPhone: dto.customerPhone?.trim() || 'Via WhatsApp',
+      customerEmail: dto.customerEmail?.trim() || undefined,
+      deliveryMethod,
+      deliveryLocation:
+        dto.deliveryLocation?.trim() ||
+        (isPickup ? 'Bazaar Plaza 3rd Floor, Moi Ave, Nairobi CBD' : 'To be confirmed on WhatsApp'),
+      orderNotes: dto.orderNotes?.trim() || undefined,
       items: orderItems,
       subtotal,
       deliveryFee: isPickup ? 0 : null,
       totalAmount: subtotal,
-      paymentMethod: dto.paymentMethod,
+      paymentMethod: dto.paymentMethod || 'MPESA_BUY_GOODS',
       paymentStatus: 'UNPAID',
       status: isPickup ? 'AWAITING_PAYMENT' : 'REVIEWING_DELIVERY',
       createdAt: new Date().toISOString(),

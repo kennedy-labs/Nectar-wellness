@@ -6,13 +6,13 @@ import { hashPassword, verifyPassword } from './auth.js';
 import { StoredAdminUser } from './db.js';
 
 export interface CreateOrderDTO {
-  customerName: string;
-  customerPhone: string;
+  customerName?: string;
+  customerPhone?: string;
   customerEmail?: string;
-  deliveryMethod: DeliveryMethod;
-  deliveryLocation: string;
+  deliveryMethod?: DeliveryMethod;
+  deliveryLocation?: string;
   orderNotes?: string;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
   items: { productId: string; quantity: number }[];
 }
 
@@ -65,9 +65,6 @@ export const service = {
 
   // Orders
   createOrder(dto: CreateOrderDTO): Order {
-    if (!dto.customerName?.trim() || !dto.customerPhone?.trim()) {
-      throw new Error('Customer name and phone number are required.');
-    }
     if (!dto.items || dto.items.length === 0) {
       throw new Error('Order must include at least one product.');
     }
@@ -98,7 +95,8 @@ export const service = {
 
     // Dynamic Delivery Handling
     // Shop pickup in Nairobi CBD is 0 KES delivery
-    const isPickup = dto.deliveryMethod === 'PICKUP';
+    const deliveryMethod = dto.deliveryMethod || 'NAIROBI_LOCAL';
+    const isPickup = deliveryMethod === 'PICKUP';
     const deliveryFee: number | null = isPickup ? 0 : null;
     const initialStatus: OrderStatus = isPickup ? 'AWAITING_PAYMENT' : 'REVIEWING_DELIVERY';
 
@@ -107,17 +105,19 @@ export const service = {
 
     const order: Order = {
       id: orderId,
-      customerName: dto.customerName.trim(),
-      customerPhone: dto.customerPhone.trim(),
+      customerName: dto.customerName?.trim() || 'WhatsApp Customer',
+      customerPhone: dto.customerPhone?.trim() || 'Via WhatsApp',
       customerEmail: dto.customerEmail?.trim() || undefined,
-      deliveryMethod: dto.deliveryMethod,
-      deliveryLocation: dto.deliveryLocation.trim(),
+      deliveryMethod,
+      deliveryLocation:
+        dto.deliveryLocation?.trim() ||
+        (isPickup ? 'Bazaar Plaza 3rd Floor, Moi Ave, Nairobi CBD' : 'To be confirmed on WhatsApp'),
       orderNotes: dto.orderNotes?.trim() || undefined,
       items: orderItems,
       subtotal,
       deliveryFee,
       totalAmount: subtotal + (deliveryFee || 0),
-      paymentMethod: dto.paymentMethod,
+      paymentMethod: dto.paymentMethod || 'MPESA_BUY_GOODS',
       paymentStatus: 'UNPAID',
       status: initialStatus,
       createdAt: now,

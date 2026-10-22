@@ -201,13 +201,13 @@ export default function App() {
 
   // Order Submission Handler
   const handleSubmitOrder = async (formData: {
-    customerName: string;
-    customerPhone: string;
+    customerName?: string;
+    customerPhone?: string;
     customerEmail?: string;
-    deliveryMethod: DeliveryMethod;
-    deliveryLocation: string;
+    deliveryMethod?: DeliveryMethod;
+    deliveryLocation?: string;
     orderNotes?: string;
-    paymentMethod: PaymentMethod;
+    paymentMethod?: PaymentMethod;
   }): Promise<Order | null> => {
     const orderItems = cart.map((i) => ({
       productId: i.product.id,

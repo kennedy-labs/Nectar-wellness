@@ -158,7 +158,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
               {/* Informative logistics note */}
               <div className="p-2.5 rounded-lg bg-[#EBF2EE] border border-[#D5E4DB] text-[11px] text-[#2F4E3E] leading-tight">
-                💡 <strong>Dynamic Delivery:</strong> Free shop pickup in Nairobi CBD. Local Bolt rider or Countrywide matatu parcel fees confirmed manually to give you the lowest fee.
+                💡 <strong>Dynamic Delivery:</strong> Free shop pickup in Nairobi CBD. Local Bolt rider or Countrywide matatu parcel fees confirmed based on your location for the best rate.
               </div>
 
               <div className="space-y-2 pt-1">
