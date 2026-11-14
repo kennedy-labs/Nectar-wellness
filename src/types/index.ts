@@ -81,14 +81,16 @@ export interface CartItem {
 
 export interface AdminUser {
   id: string;
-  email: string;
+  phone: string;
+  email?: string;
   name: string;
   role: 'owner';
-  claimedAt: string;
+  claimedAt?: string;
 }
 
 export interface AdminSetupStatus {
   isClaimed: boolean;
+  ownerPhone?: string;
   ownerEmail?: string;
   ownerName?: string;
   claimedAt?: string;

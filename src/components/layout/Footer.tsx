@@ -125,7 +125,7 @@ export const Footer: React.FC<FooterProps> = ({
             © {new Date().getFullYear()} {BUSINESS_CONFIG.name}. All rights reserved. Nairobi, Kenya.
           </div>
           <div className="flex items-center gap-4">
-            <span>Bazaar Plaza, Moi Avenue, Nairobi CBD</span>
+            <span>{BUSINESS_CONFIG.location}</span>
             <span aria-hidden="true">·</span>
             <span>Pure Botanical Formulations</span>
           </div>

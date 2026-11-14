@@ -35,7 +35,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
                 <span>Real-World Delivery & Verification Workflow</span>
               </div>
               <p>
-                To provide you the lowest actual transport cost, delivery rates are confirmed dynamically via WhatsApp based on your exact location in Nairobi (Bolt / Rider) or countrywide stage (Matatu parcel / Courier). Free pickup available at our Bazaar Plaza shop.
+                To provide you the lowest actual transport cost, delivery rates are confirmed dynamically via WhatsApp based on your exact location in Nairobi (Bolt / Rider) or countrywide stage (Matatu parcel / Courier). Free pickup available at our Odeon, Nairobi CBD shop.
               </p>
             </div>
 
@@ -87,7 +87,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
                   Hand-Curated Botanical Formulations
                 </p>
                 <p className="text-[#D8E4DC] text-xs mt-0.5">
-                  Bazaar Plaza, Moi Avenue, Nairobi CBD
+                  Odeon, Nairobi CBD, Kenya
                 </p>
               </div>
             </div>

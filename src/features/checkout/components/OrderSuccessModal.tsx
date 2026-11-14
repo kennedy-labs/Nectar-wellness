@@ -54,7 +54,9 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
             Order #{order.id}
           </h2>
           <p className="text-xs sm:text-sm text-[#525E55] max-w-sm mx-auto leading-relaxed">
-            Thank you, {order.customerName}. Your order request has been logged. Now connect with our apothecary team on WhatsApp to finalize delivery details.
+            {order.deliveryMethod === 'PICKUP'
+              ? `Thank you, ${order.customerName}. Your order is logged for free pickup at ${BUSINESS_CONFIG.location}. Complete M-Pesa payment below and message us on WhatsApp when ready to collect.`
+              : `Thank you, ${order.customerName}. Your order request has been logged. Now connect with our apothecary team on WhatsApp to confirm your delivery fee and dispatch.`}
           </p>
         </div>
 
@@ -67,7 +69,9 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
                 Finalize on WhatsApp
               </h4>
               <p className="text-[11px] text-[#455A4C] leading-snug mt-0.5">
-                Click below to send your order summary to our WhatsApp. We will confirm your delivery cost immediately and dispatch your herbal package.
+                {order.deliveryMethod === 'PICKUP'
+                  ? 'Send your order summary on WhatsApp to coordinate pickup at Odeon, Nairobi CBD.'
+                  : 'Click below to send your order summary to our WhatsApp. We will confirm your delivery cost immediately and dispatch your herbal package.'}
               </p>
             </div>
           </div>

@@ -7,79 +7,12 @@ const STORAGE_KEYS = {
   CATEGORIES: 'nnw_categories_v1',
   ORDERS: 'nnw_orders_v1',
   ADMIN_AUTH: 'nnw_admin_auth_v1',
+  ADMIN_TOKEN: 'nnw_admin_token_v1',
   ADMIN_USER: 'nnw_admin_user_v1',
   LAST_ORDER_ID: 'nnw_last_order_id_v1',
 };
 
-// Seed demo order so admin and tracking have immediate operational reality to test
-const DEMO_ORDERS: Order[] = [
-  {
-    id: "NNW-1042",
-    customerName: "Amina Wanjiku",
-    customerPhone: "0722123456",
-    customerEmail: "amina.w@example.com",
-    deliveryMethod: "NAIROBI_LOCAL",
-    deliveryLocation: "Kilimani, Dennis Pritt Rd, Apt 3A",
-    orderNotes: "Please call when the rider arrives at the gate.",
-    items: [
-      {
-        id: "item_1",
-        productId: "prod_shilajit_gold",
-        productName: "Pure Himalayan Shilajit Resin (Gold Grade)",
-        productSlug: "pure-himalayan-shilajit-resin-gold-grade",
-        productImage: "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
-        quantity: 1,
-        priceAtPurchase: 3800,
-      },
-      {
-        id: "item_2",
-        productId: "prod_moringa_powder",
-        productName: "Kilifi Raw Organic Moringa Leaf Powder",
-        productSlug: "kilifi-raw-organic-moringa-leaf-powder",
-        productImage: "/src/assets/images/product_moringa_powder_1790820605379.jpg",
-        quantity: 1,
-        priceAtPurchase: 950,
-      }
-    ],
-    subtotal: 4750,
-    deliveryFee: 300,
-    totalAmount: 5050,
-    paymentMethod: "MPESA_BUY_GOODS",
-    paymentStatus: "CONFIRMED",
-    paymentReference: "QJK8912P4",
-    status: "PROCESSING",
-    adminNotes: "Bolt rider dispatched, package verified with herbal usage guide.",
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: "NNW-1048",
-    customerName: "David Ochieng",
-    customerPhone: "0733987654",
-    deliveryMethod: "COUNTRYWIDE",
-    deliveryLocation: "Kisumu Central, Easy Coach Parcel Stage",
-    items: [
-      {
-        id: "item_3",
-        productId: "prod_ashwagandha_tincture",
-        productName: "Organic Ashwagandha Root Extract (KSM-66)",
-        productSlug: "organic-ashwagandha-root-extract",
-        productImage: "/src/assets/images/product_ashwagandha_tincture_1790820615059.jpg",
-        quantity: 2,
-        priceAtPurchase: 2400,
-      }
-    ],
-    subtotal: 4800,
-    deliveryFee: null, // Awaiting manual delivery review!
-    totalAmount: 4800,
-    paymentMethod: "MPESA_BUY_GOODS",
-    paymentStatus: "UNPAID",
-    status: "REVIEWING_DELIVERY",
-    orderNotes: "Need advice on sending via Easy Coach or 2NK matatu.",
-    createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-  }
-];
+const DEMO_ORDERS: Order[] = [];
 
 export const storage = {
   // Cart
@@ -192,9 +125,30 @@ export const storage = {
   },
 
   // Admin Auth
+  getAdminToken(): string | null {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN);
+    } catch {
+      return null;
+    }
+  },
+  setAdminToken(token: string | null): void {
+    try {
+      if (token) {
+        localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, token);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  },
   isAdminLoggedIn(): boolean {
     try {
-      return localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+      return (
+        localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true' &&
+        Boolean(localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN))
+      );
     } catch {
       return false;
     }
@@ -205,6 +159,7 @@ export const storage = {
         localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
       } else {
         localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.ADMIN_USER);
       }
     } catch (e) {

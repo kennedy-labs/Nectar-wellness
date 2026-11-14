@@ -4,23 +4,14 @@ import {
   Lock,
   LogOut,
   Store,
-  ExternalLink,
   AlertCircle,
-  Truck,
   CheckCircle2,
-  Package,
   ArrowLeft,
-  Settings,
-  KeyRound,
   Check,
-  UserPlus,
   UserCheck,
-  Mail,
-  User,
-  Sparkles,
+  Phone,
 } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../../config/constants';
-import { formatKES } from '../../../lib/utils';
 import { AdminSetupStatus, Category, Order, OrderStatus, Product } from '../../../types';
 import { api } from '../../../lib/api';
 import { AdminInventoryTable } from '../components/AdminInventoryTable';
@@ -32,7 +23,7 @@ interface AdminPageProps {
   products: Product[];
   categories: Category[];
   isLoggedIn: boolean;
-  onLogin: (credentials: { email?: string; password?: string; pin?: string } | string) => Promise<boolean>;
+  onLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
   onLogout: () => void;
   onNavigateHome: () => void;
   onUpdateDeliveryFee: (orderId: string, fee: number, notes?: string) => Promise<void>;
@@ -67,28 +58,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   // Setup & Auth Status
   const [setupStatus, setSetupStatus] = useState<AdminSetupStatus | null>(null);
   const [setupLoading, setSetupLoading] = useState(true);
-  const [authViewMode, setAuthViewMode] = useState<'LOGIN' | 'REGISTER' | 'DEV'>('LOGIN');
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [pin, setPin] = useState('2540');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Owner Registration State
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regError, setRegError] = useState('');
-  const [regLoading, setRegLoading] = useState(false);
-
-  // Password Change State
+  // Credentials Update State
+  const [newPhoneInput, setNewPhoneInput] = useState('');
   const [currentPasswordInput, setCurrentPasswordInput] = useState('');
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const [passwordChangeMsg, setPasswordChangeMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passwordChangeMsg, setPasswordChangeMsg] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Workspace Tabs & Modals
@@ -100,14 +85,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     try {
       const status = await api.getAdminSetupStatus();
       setSetupStatus(status);
-      if (!status.isClaimed) {
-        setAuthViewMode('REGISTER');
-      } else {
-        setAuthViewMode('LOGIN');
-        if (status.ownerEmail) {
-          setLoginEmail(status.ownerEmail);
-        }
-      }
+      setNewPhoneInput(status.ownerPhone || BUSINESS_CONFIG.adminDefaultPhone);
     } catch {
       // Fallback
     } finally {
@@ -119,45 +97,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     fetchSetupStatus();
   }, [isLoggedIn]);
 
-  // Handle Owner Registration
-  const handleRegisterOwner = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegError('');
-
-    if (!regEmail || !regEmail.includes('@')) {
-      setRegError('Please provide a valid official email address.');
-      return;
-    }
-    if (regPassword.length < 6) {
-      setRegError('Password must be at least 6 characters long.');
-      return;
-    }
-    if (regPassword !== regConfirmPassword) {
-      setRegError('Passwords do not match.');
-      return;
-    }
-
-    setRegLoading(true);
-    try {
-      const res = await api.setupOwner({
-        email: regEmail,
-        password: regPassword,
-        name: regName.trim() || 'Store Owner',
-      });
-
-      if (res.success) {
-        await onLogin({ email: regEmail, password: regPassword });
-        await fetchSetupStatus();
-      } else {
-        setRegError(res.error || 'Registration failed.');
-      }
-    } catch {
-      setRegError('Network error during registration.');
-    } finally {
-      setRegLoading(false);
-    }
-  };
-
   // Handle Login Submit
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,19 +104,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     setLoginLoading(true);
 
     try {
-      let ok = false;
-      if (authViewMode === 'DEV') {
-        ok = await onLogin(pin);
-      } else {
-        ok = await onLogin({ email: loginEmail, password: loginPassword });
-      }
-
+      const ok = await onLogin({ phone: loginPhone, password: loginPassword });
       if (!ok) {
-        setLoginError(
-          authViewMode === 'DEV'
-            ? 'Invalid Setup PIN. Please check and try again.'
-            : 'Invalid owner email or password.'
-        );
+        setLoginError('Invalid phone number or password.');
+      } else {
+        setLoginPassword('');
       }
     } catch {
       setLoginError('Authentication failed.');
@@ -186,35 +117,57 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   };
 
-  // Handle Password Change
-  const handleChangePassword = async (e: React.FormEvent) => {
+  // Handle Credentials / Password Change
+  const handleChangeCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordChangeMsg(null);
 
-    if (newPasswordInput.length < 6) {
-      setPasswordChangeMsg({ type: 'error', text: 'New password must be at least 6 characters.' });
+    const trimmedNewPhone = newPhoneInput.trim();
+    const trimmedNewPassword = newPasswordInput.trim();
+
+    if (!trimmedNewPhone) {
+      setPasswordChangeMsg({ type: 'error', text: 'Please provide an admin phone number.' });
       return;
     }
-    if (newPasswordInput !== confirmPasswordInput) {
-      setPasswordChangeMsg({ type: 'error', text: 'New password and confirmation do not match.' });
+
+    if (trimmedNewPassword && trimmedNewPassword.length < 4) {
+      setPasswordChangeMsg({
+        type: 'error',
+        text: 'New password must be at least 4 characters.',
+      });
+      return;
+    }
+
+    if (trimmedNewPassword && trimmedNewPassword !== confirmPasswordInput.trim()) {
+      setPasswordChangeMsg({
+        type: 'error',
+        text: 'New password and confirmation do not match.',
+      });
       return;
     }
 
     setPasswordLoading(true);
     try {
       const res = await api.changeOwnerPassword({
-        email: setupStatus?.ownerEmail || '',
         currentPassword: currentPasswordInput,
-        newPassword: newPasswordInput,
+        newPassword: trimmedNewPassword || undefined,
+        newPhone: trimmedNewPhone,
       });
 
       if (res.success) {
-        setPasswordChangeMsg({ type: 'success', text: 'Owner password updated successfully!' });
+        setPasswordChangeMsg({
+          type: 'success',
+          text: 'Admin phone number & password updated successfully!',
+        });
         setCurrentPasswordInput('');
         setNewPasswordInput('');
         setConfirmPasswordInput('');
+        await fetchSetupStatus();
       } else {
-        setPasswordChangeMsg({ type: 'error', text: res.error || 'Failed to update password.' });
+        setPasswordChangeMsg({
+          type: 'error',
+          text: res.error || 'Failed to update credentials.',
+        });
       }
     } catch {
       setPasswordChangeMsg({ type: 'error', text: 'Network request failed.' });
@@ -224,12 +177,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   // -------------------------------------------------------------
-  // IF NOT LOGGED IN: Render Setup / Registration or Login Screen
+  // IF NOT LOGGED IN: Render Phone + Password Login Screen
   // -------------------------------------------------------------
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#F4F6F4] flex flex-col justify-center items-center p-4">
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-[#E2E6E3] p-6 sm:p-8 space-y-6">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-[#E2E6E3] p-6 sm:p-8 space-y-6">
           {/* Brand & Portal Header */}
           <div className="text-center space-y-2">
             <div className="w-14 h-14 rounded-2xl bg-[#E8EFEA] text-[#224032] mx-auto flex items-center justify-center font-bold text-lg shadow-2xs">
@@ -239,211 +192,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               Nature’s Nectar Wellness
             </h1>
             <p className="text-xs text-[#58665C]">
-              Operations & Store Management Console
+              Admin Operations & Store Management Console
             </p>
           </div>
 
           {setupLoading ? (
-            <div className="py-12 text-center text-xs text-[#6B796F]">
-              Checking store setup status...
-            </div>
-          ) : !setupStatus?.isClaimed ? (
-            /* UNCLAIMED INITIAL SETUP EXPERIENCE */
-            <div className="space-y-5">
-              {/* Segmented Mode Selector */}
-              <div className="flex bg-[#F2F4F2] p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setAuthViewMode('REGISTER')}
-                  className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    authViewMode === 'REGISTER'
-                      ? 'bg-white text-[#182C22] shadow-2xs font-semibold'
-                      : 'text-[#5C6E62] hover:text-[#182C22]'
-                  }`}
-                >
-                  <UserPlus className="w-3.5 h-3.5 text-[#2D5A42]" />
-                  <span>Register as Store Owner</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAuthViewMode('DEV')}
-                  className={`flex-1 py-2 px-3 text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    authViewMode === 'DEV'
-                      ? 'bg-white text-[#182C22] shadow-2xs font-semibold'
-                      : 'text-[#5C6E62] hover:text-[#182C22]'
-                  }`}
-                >
-                  <KeyRound className="w-3.5 h-3.5 text-[#856404]" />
-                  <span>Developer Access</span>
-                </button>
-              </div>
-
-              {authViewMode === 'REGISTER' ? (
-                /* OWNER REGISTRATION FORM */
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-[#EBF5EF] border border-[#C5E1CF] text-xs text-[#245C38] flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 shrink-0 text-[#245C38] mt-0.5" />
-                    <div>
-                      <strong className="block font-semibold">Store Ownership Unclaimed</strong>
-                      <span>
-                        Are you the real owner? Register your email and password below to claim full, permanent ownership of the system.
-                      </span>
-                    </div>
-                  </div>
-
-                  {regError && (
-                    <div className="p-3 rounded-xl bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>{regError}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleRegisterOwner} className="space-y-3.5">
-                    <div>
-                      <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                        Full Name / Store Owner Name
-                      </label>
-                      <div className="relative">
-                        <User className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          required
-                          value={regName}
-                          onChange={(e) => setRegName(e.target.value)}
-                          placeholder="e.g. Kennedy N."
-                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                        Official Store Owner Email
-                      </label>
-                      <div className="relative">
-                        <Mail className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="email"
-                          required
-                          value={regEmail}
-                          onChange={(e) => setRegEmail(e.target.value)}
-                          placeholder="owner@naturesnectar.co.ke"
-                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                          Create Password
-                        </label>
-                        <div className="relative">
-                          <Lock className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="password"
-                            required
-                            minLength={6}
-                            value={regPassword}
-                            onChange={(e) => setRegPassword(e.target.value)}
-                            placeholder="Min 6 chars"
-                            className="w-full pl-9 pr-3 py-2.5 text-xs bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                          Confirm Password
-                        </label>
-                        <div className="relative">
-                          <Lock className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="password"
-                            required
-                            minLength={6}
-                            value={regConfirmPassword}
-                            onChange={(e) => setRegConfirmPassword(e.target.value)}
-                            placeholder="Confirm"
-                            className="w-full pl-9 pr-3 py-2.5 text-xs bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={regLoading}
-                      className="w-full bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer shadow-xs mt-2"
-                    >
-                      {regLoading ? 'Registering Store Owner...' : 'Register & Claim Store Ownership'}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                /* DEVELOPER TEMPORARY ACCESS */
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#92400E] flex items-start gap-2.5">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-[#B45309] mt-0.5" />
-                    <div>
-                      <strong className="block font-semibold">Temporary Developer Access</strong>
-                      <span>
-                        Use this while setting up and testing. Once the real owner completes registration above, this temporary access is revoked.
-                      </span>
-                    </div>
-                  </div>
-
-                  {loginError && (
-                    <div className="p-3 rounded-xl bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>{loginError}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleLoginSubmit} className="space-y-3.5">
-                    <div>
-                      <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                        Developer Setup PIN
-                      </label>
-                      <div className="relative">
-                        <Lock className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="password"
-                          required
-                          value={pin}
-                          onChange={(e) => setPin(e.target.value)}
-                          placeholder="2540"
-                          className="w-full pl-9 pr-3 py-2.5 text-center font-mono tracking-widest text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loginLoading}
-                      className="w-full bg-[#3D5245] hover:bg-[#2A3A30] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer shadow-xs"
-                    >
-                      {loginLoading ? 'Entering Console...' : 'Continue as Developer (PIN: 2540)'}
-                    </button>
-                  </form>
-                </div>
-              )}
+            <div className="py-10 text-center text-xs text-[#6B796F]">
+              Loading admin sign-in...
             </div>
           ) : (
-            /* CLAIMED: REAL OWNER EMAIL + PASSWORD LOGIN */
-            <div className="space-y-5">
-              <div className="p-3.5 rounded-xl bg-[#EBF5EF] border border-[#C5E1CF] text-xs text-[#245C38] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#245C38]" />
-                  <span>
-                    Store Owner: <strong>{setupStatus.ownerName}</strong>
-                  </span>
-                </div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#D3E8DA] px-2 py-0.5 rounded-md text-[#1E4D2F]">
-                  Owner Secured
-                </span>
-              </div>
-
+            <div className="space-y-4">
               {loginError && (
                 <div className="p-3 rounded-xl bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -454,17 +212,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-[#3A463D] mb-1">
-                    Registered Owner Email
+                    Admin Phone Number
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Phone className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
-                      type="email"
+                      type="tel"
                       required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="owner@example.com"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                      autoFocus
+                      value={loginPhone}
+                      onChange={(e) => setLoginPhone(e.target.value)}
+                      placeholder="0757122299"
+                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
                     />
                   </div>
                 </div>
@@ -480,18 +239,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                      placeholder="••••"
+                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
                     />
                   </div>
                 </div>
 
+                {!setupStatus?.isClaimed && (
+                  <p className="text-[11px] text-[#5C6A60] bg-[#F4F7F5] border border-[#E1E8E3] rounded-xl px-3 py-2 text-center">
+                    Default phone: <span className="font-mono font-semibold text-[#182C22]">{BUSINESS_CONFIG.adminDefaultPhone}</span> · Default password: <span className="font-mono font-semibold text-[#182C22]">{BUSINESS_CONFIG.adminDefaultPassword}</span>
+                  </p>
+                )}
+
                 <button
                   type="submit"
-                  disabled={loginLoading}
+                  disabled={loginLoading || !loginPhone || !loginPassword}
                   className="w-full bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer shadow-xs"
                 >
-                  {loginLoading ? 'Verifying...' : 'Sign In as Store Owner'}
+                  {loginLoading ? 'Verifying...' : 'Sign In to Admin Portal'}
                 </button>
               </form>
             </div>
@@ -523,6 +288,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     (o) => o.status === 'AWAITING_PAYMENT'
   ).length;
 
+  const activePhone = setupStatus?.ownerPhone || BUSINESS_CONFIG.adminDefaultPhone;
+
   return (
     <div className="min-h-screen bg-[#F7F9F7] text-[#242A24] flex flex-col">
       {/* Standalone Admin Top Navigation */}
@@ -548,26 +315,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {/* Store Ownership Status Badge */}
-            {setupStatus?.isClaimed ? (
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#EBF5EF] border border-[#C5E1CF] rounded-xl text-xs text-[#245C38]">
-                <UserCheck className="w-3.5 h-3.5 text-[#245C38]" />
-                <span>
-                  Owner: <strong>{setupStatus.ownerName}</strong> ({setupStatus.ownerEmail})
-                </span>
-              </div>
-            ) : (
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#FEF3C7] border border-[#FDE68A] rounded-xl text-xs text-[#92400E]">
-                <AlertCircle className="w-3.5 h-3.5 text-[#B45309]" />
-                <span>Developer Mode (Unclaimed)</span>
-                <button
-                  onClick={() => setActiveTab('SETTINGS')}
-                  className="underline font-semibold text-[#78350F] hover:text-black cursor-pointer"
-                >
-                  Claim Now
-                </button>
-              </div>
-            )}
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#EBF5EF] border border-[#C5E1CF] rounded-xl text-xs text-[#245C38]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#245C38]" />
+              <span>
+                Admin: <strong className="font-mono">{activePhone}</strong>
+              </span>
+            </div>
 
             <button
               onClick={onNavigateHome}
@@ -627,7 +380,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 : 'border-transparent text-[#66756B] hover:text-[#1A2E23]'
             }`}
           >
-            Security & PIN
+            Security & Account
           </button>
         </div>
 
@@ -665,10 +418,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Settings & Store Owner Management */}
+        {/* Tab 3: Settings & Admin Credentials */}
         {activeTab === 'SETTINGS' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Store Owner Credentials Card */}
+            {/* Admin Credentials Card */}
             <div className="md:col-span-2 p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0EFEB] pb-4">
                 <div className="flex items-center gap-3">
@@ -677,10 +430,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   </div>
                   <div>
                     <h3 className="font-display font-medium text-base text-[#1A2E23]">
-                      Store Owner Account & Exclusive Ownership
+                      Admin Phone & Password
                     </h3>
                     <p className="text-xs text-[#5D6B62]">
-                      System ownership credentials and administrative password.
+                      Manage the phone number and password used to access this admin console.
                     </p>
                   </div>
                 </div>
@@ -689,205 +442,131 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   {setupStatus?.isClaimed ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]">
                       <Check className="w-3.5 h-3.5 text-[#245C38]" />
-                      Claimed & Secured by Real Owner
+                      Custom Credentials Active
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
                       <AlertCircle className="w-3.5 h-3.5 text-[#B45309]" />
-                      Ownership Pending Registration
+                      Using Default Credentials
                     </span>
                   )}
                 </div>
               </div>
 
-              {setupStatus?.isClaimed ? (
-                /* CLAIMED OWNER ACCOUNT INFO & PASSWORD CHANGE */
-                <div className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-[#F8F9F8] rounded-xl border border-[#E6EAE7] text-xs">
-                    <div>
-                      <span className="text-[#64746A] block mb-0.5">Registered Owner:</span>
-                      <strong className="text-[#1A2E23] font-semibold text-sm">
-                        {setupStatus.ownerName}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="text-[#64746A] block mb-0.5">Owner Email Address:</span>
-                      <strong className="text-[#1A2E23] font-mono">
-                        {setupStatus.ownerEmail}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="text-[#64746A] block mb-0.5">Claimed On:</span>
-                      <span className="text-[#4D5D51]">
-                        {setupStatus.claimedAt
-                          ? new Date(setupStatus.claimedAt).toLocaleDateString()
-                          : 'Initial setup'}
-                      </span>
-                    </div>
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-[#F8F9F8] rounded-xl border border-[#E6EAE7] text-xs">
+                  <div>
+                    <span className="text-[#64746A] block mb-0.5">Role:</span>
+                    <strong className="text-[#1A2E23] font-semibold text-sm">
+                      {setupStatus?.ownerName || 'Store Owner'}
+                    </strong>
                   </div>
-
-                  {/* Change Password Form */}
-                  <form onSubmit={handleChangePassword} className="space-y-4 max-w-xl">
-                    <h4 className="text-xs font-semibold text-[#29362D] uppercase tracking-wide">
-                      Update Owner Password
-                    </h4>
-
-                    {passwordChangeMsg && (
-                      <div
-                        className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
-                          passwordChangeMsg.type === 'success'
-                            ? 'bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]'
-                            : 'bg-[#FDF2F2] text-[#C53030] border border-[#F8D7D7]'
-                        }`}
-                      >
-                        {passwordChangeMsg.type === 'success' ? (
-                          <CheckCircle2 className="w-4 h-4 shrink-0 text-[#245C38]" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 shrink-0 text-[#C53030]" />
-                        )}
-                        <span>{passwordChangeMsg.text}</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                          Current Password
-                        </label>
-                        <input
-                          type="password"
-                          value={currentPasswordInput}
-                          onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                          placeholder="Current password"
-                          required
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                          New Password
-                        </label>
-                        <input
-                          type="password"
-                          value={newPasswordInput}
-                          onChange={(e) => setNewPasswordInput(e.target.value)}
-                          placeholder="Min 6 chars"
-                          required
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          value={confirmPasswordInput}
-                          onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                          placeholder="Confirm"
-                          required
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end pt-1">
-                      <button
-                        type="submit"
-                        disabled={passwordLoading}
-                        className="px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        {passwordLoading ? 'Updating Password...' : 'Save New Password'}
-                      </button>
-                    </div>
-                  </form>
+                  <div>
+                    <span className="text-[#64746A] block mb-0.5">Admin Phone Number:</span>
+                    <strong className="text-[#1A2E23] font-mono">
+                      {activePhone}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-[#64746A] block mb-0.5">Last Updated:</span>
+                    <span className="text-[#4D5D51]">
+                      {setupStatus?.claimedAt
+                        ? new Date(setupStatus.claimedAt).toLocaleDateString()
+                        : 'Default setup'}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                /* UNCLAIMED: OWNER REGISTRATION FORM INSIDE SETTINGS */
-                <div className="space-y-4 max-w-xl">
-                  <div className="p-3.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#92400E]">
-                    The store is currently running in <strong>Developer Mode</strong>. As the real owner, register your email and password below to take permanent exclusive control.
-                  </div>
 
-                  {regError && (
-                    <div className="p-3 rounded-xl bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>{regError}</span>
+                {/* Update Phone & Password Form */}
+                <form onSubmit={handleChangeCredentials} className="space-y-4 max-w-2xl">
+                  <h4 className="text-xs font-semibold text-[#29362D] uppercase tracking-wide">
+                    Update Admin Credentials
+                  </h4>
+
+                  {passwordChangeMsg && (
+                    <div
+                      className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                        passwordChangeMsg.type === 'success'
+                          ? 'bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]'
+                          : 'bg-[#FDF2F2] text-[#C53030] border border-[#F8D7D7]'
+                      }`}
+                    >
+                      {passwordChangeMsg.type === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-[#245C38]" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0 text-[#C53030]" />
+                      )}
+                      <span>{passwordChangeMsg.text}</span>
                     </div>
                   )}
 
-                  <form onSubmit={handleRegisterOwner} className="space-y-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                        Store Owner Name
+                        Admin Phone Number
                       </label>
                       <input
-                        type="text"
+                        type="tel"
+                        value={newPhoneInput}
+                        onChange={(e) => setNewPhoneInput(e.target.value)}
+                        placeholder="0757122299"
                         required
-                        value={regName}
-                        onChange={(e) => setRegName(e.target.value)}
-                        placeholder="Owner name"
                         className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                       />
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                        Owner Email Address
+                        Current Password
                       </label>
                       <input
-                        type="email"
+                        type="password"
+                        value={currentPasswordInput}
+                        onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                        placeholder="Enter current password"
                         required
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="owner@naturesnectar.co.ke"
                         className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                          Password (min 6 chars)
-                        </label>
-                        <input
-                          type="password"
-                          required
-                          minLength={6}
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Password"
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          required
-                          minLength={6}
-                          value={regConfirmPassword}
-                          onChange={(e) => setRegConfirmPassword(e.target.value)}
-                          placeholder="Confirm"
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
+                        New Password (optional, min 4 chars)
+                      </label>
+                      <input
+                        type="password"
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        placeholder="Leave blank to keep current"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                      />
                     </div>
 
+                    <div>
+                      <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPasswordInput}
+                        onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
                     <button
                       type="submit"
-                      disabled={regLoading}
-                      className="px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer"
+                      disabled={passwordLoading}
+                      className="px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      {regLoading ? 'Registering...' : 'Register as Store Owner'}
+                      {passwordLoading ? 'Saving Changes...' : 'Save Credentials'}
                     </button>
-                  </form>
-                </div>
-              )}
+                  </div>
+                </form>
+              </div>
             </div>
 
             {/* M-Pesa Buy Goods Configuration */}

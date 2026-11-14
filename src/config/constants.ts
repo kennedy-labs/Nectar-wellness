@@ -3,13 +3,13 @@ import { Category, Product } from '../types';
 export const BUSINESS_CONFIG = {
   name: "Nature’s Nectar Wellness",
   tagline: "Pure Herbal Remedies & Natural Wellness Apothecary",
-  location: "Bazaar Plaza, 3rd Floor, Suite 308, Moi Avenue, Nairobi CBD, Kenya",
-  whatsappNumber: "+254 712 345 678",
-  whatsappPhoneDigits: "254712345678", // Country code + 9 digits for wa.me link
-  phoneDisplay: "0712 345 678",
+  location: "Odeon, Nairobi CBD, Kenya",
+  whatsappNumber: "+254 757 122 299",
+  whatsappPhoneDigits: "254757122299", // Country code + 9 digits for wa.me link
+  phoneDisplay: "0757 122 299",
   email: "hello@naturesnectar.co.ke",
   hours: "Mon - Sat: 8:30 AM - 6:30 PM | Sun: Closed",
-  mpesaTill: "9823412",
+  mpesaTill: "5812327",
   mpesaStoreName: "NATURES NECTAR WELLNESS",
   bankDetails: {
     bank: "Equity Bank Kenya",
@@ -17,7 +17,8 @@ export const BUSINESS_CONFIG = {
     accountNumber: "0140283921029",
     branch: "Nairobi Supreme Branch",
   },
-  adminDefaultPin: "2540", // Admin PIN for quick authorized owner access
+  adminDefaultPhone: "0757122299",
+  adminDefaultPassword: "0000",
 };
 
 export const INITIAL_CATEGORIES: Category[] = [

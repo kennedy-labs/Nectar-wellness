@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageCircle, Truck, Sparkles, ShieldCheck } from 'lucide-react';
+import { BUSINESS_CONFIG } from '../../config/constants';
 
 export const TrustFeatures: React.FC = () => {
   return (
@@ -41,7 +42,7 @@ export const TrustFeatures: React.FC = () => {
             </div>
             <h3 className="font-semibold text-sm text-[#1A2E24]">M-Pesa Buy Goods Till</h3>
             <p className="text-xs text-[#525E55] leading-relaxed">
-              Pay securely via verified M-Pesa Buy Goods (Till 9823412). Our owner verifies your payment and starts preparation immediately.
+              Pay securely via verified M-Pesa Buy Goods (Till {BUSINESS_CONFIG.mpesaTill}). Our owner verifies your payment and starts preparation immediately.
             </p>
           </div>
 
@@ -51,7 +52,7 @@ export const TrustFeatures: React.FC = () => {
             </div>
             <h3 className="font-semibold text-sm text-[#1A2E24]">Dispatch & Pickup</h3>
             <p className="text-xs text-[#525E55] leading-relaxed">
-              Dispatched swiftly via Bolt rider (Nairobi) or trusted Matatu parcel stages countrywide, or pick up free at Bazaar Plaza CBD.
+              Dispatched swiftly via Bolt rider (Nairobi) or trusted Matatu parcel stages countrywide, or pick up free at {BUSINESS_CONFIG.location}.
             </p>
           </div>
         </div>

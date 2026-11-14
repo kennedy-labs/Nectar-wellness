@@ -188,45 +188,5 @@
       "updatedAt": "2026-10-04T15:57:46.263Z"
     }
   ],
-  "orders": [
-    {
-      "id": "NNW-1042",
-      "customerName": "Amina Wanjiku",
-      "customerPhone": "0722123456",
-      "customerEmail": "amina.w@example.com",
-      "deliveryMethod": "NAIROBI_LOCAL",
-      "deliveryLocation": "Kilimani, Dennis Pritt Rd, Apt 3A",
-      "orderNotes": "Please call when the rider arrives at the gate.",
-      "subtotal": 4750,
-      "deliveryFee": 1500,
-      "totalAmount": 6250,
-      "paymentMethod": "MPESA_BUY_GOODS",
-      "paymentStatus": "CONFIRMED",
-      "paymentReference": "QJK8912P4",
-      "status": "PAID",
-      "adminNotes": "Bolt rider dispatched, package verified with herbal usage guide.",
-      "items": [
-        {
-          "id": "item_1",
-          "quantity": 1,
-          "productId": "prod_shilajit_gold",
-          "productName": "Pure Himalayan Shilajit Resin (Gold Grade)",
-          "productSlug": "pure-himalayan-shilajit-resin-gold-grade",
-          "productImage": "/src/assets/images/product_shilajit_resin_1790820595253.jpg",
-          "priceAtPurchase": 3800
-        },
-        {
-          "id": "item_2",
-          "quantity": 1,
-          "productId": "prod_moringa_powder",
-          "productName": "Kilifi Raw Organic Moringa Leaf Powder",
-          "productSlug": "kilifi-raw-organic-moringa-leaf-powder",
-          "productImage": "/src/assets/images/product_moringa_powder_1790820605379.jpg",
-          "priceAtPurchase": 950
-        }
-      ],
-      "createdAt": "2026-10-01T12:33:29.610Z",
-      "updatedAt": "2026-10-04T15:57:46.265Z"
-    }
-  ]
+  "orders": []
 }

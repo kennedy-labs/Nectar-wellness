@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, Lock, AlertCircle } from 'lucide-react';
+import { X, ShieldCheck, Lock, Phone, AlertCircle } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../../config/constants';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (pin: string) => Promise<boolean>;
+  onLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
 }
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
@@ -13,7 +13,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onClose,
   onLogin,
 }) => {
-  const [pin, setPin] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,11 +26,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setLoading(true);
 
     try {
-      const ok = await onLogin(pin);
+      const ok = await onLogin({ phone, password });
       if (!ok) {
-        setError('Incorrect Admin PIN. Please try again.');
+        setError('Invalid phone number or password. Please try again.');
       } else {
-        setPin('');
+        setPhone('');
+        setPassword('');
         onClose();
       }
     } catch {
@@ -59,49 +61,62 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
         <div className="space-y-1">
           <h2 className="font-display font-medium text-lg text-[#172A22]">
-            Apothecary Owner Access
+            Apothecary Admin Access
           </h2>
           <p className="text-xs text-[#5C6A60] leading-relaxed">
-            Enter your authorized PIN to manage dynamic orders, delivery pricing, and inventory.
+            Sign in with your admin phone number and password to manage orders, delivery fees, and inventory.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
           {error && (
-            <div className="p-2.5 rounded-lg bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-1.5 text-left">
+            <div className="p-2.5 rounded-lg bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="space-y-1 text-left">
+          <div className="space-y-1">
             <label className="block text-xs font-medium text-[#3A463D]">
-              Admin PIN
+              Phone Number
+            </label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="tel"
+                required
+                autoFocus
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={BUSINESS_CONFIG.adminDefaultPhone}
+                className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-[#3A463D]">
+              Password
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
-                autoFocus
-                maxLength={8}
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                placeholder="Enter 4-digit PIN"
-                className="w-full pl-9 pr-3.5 py-2.5 text-center tracking-widest text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none font-mono text-[#242A24]"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
               />
             </div>
-            <p className="text-[11px] text-[#718076] text-center pt-1">
-              Default owner PIN: <span className="font-mono font-semibold text-[#20392D]">{BUSINESS_CONFIG.adminDefaultPin}</span>
-            </p>
           </div>
 
           <button
             type="submit"
-            disabled={loading || !pin}
+            disabled={loading || !phone || !password}
             className="w-full bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-2.5 px-4 rounded-xl text-xs font-medium transition-colors cursor-pointer"
           >
-            {loading ? 'Verifying...' : 'Unlock Portal'}
+            {loading ? 'Verifying...' : 'Sign In'}
           </button>
         </form>
       </div>

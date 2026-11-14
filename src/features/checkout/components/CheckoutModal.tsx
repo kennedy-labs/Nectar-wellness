@@ -45,16 +45,34 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     e.preventDefault();
     setErrorMessage('');
 
+    const trimmedName = customerName.trim();
+    const trimmedPhone = customerPhone.trim();
+    const phoneDigits = trimmedPhone.replace(/[^0-9]/g, '');
+    const trimmedLocation = deliveryLocation.trim();
+
+    if (!trimmedName) {
+      setErrorMessage('Please enter your name.');
+      return;
+    }
+    if (phoneDigits.length < 9) {
+      setErrorMessage('Please enter a valid Safaricom/Airtel phone number (e.g. 07XX XXX XXX).');
+      return;
+    }
+    if (deliveryMethod !== 'PICKUP' && !trimmedLocation) {
+      setErrorMessage('Please enter your delivery location or destination town.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const order = await onSubmitOrder({
-        customerName: customerName.trim() || undefined,
-        customerPhone: customerPhone.trim() || undefined,
+        customerName: trimmedName,
+        customerPhone: trimmedPhone,
         deliveryMethod,
         deliveryLocation:
           deliveryMethod === 'PICKUP'
-            ? 'Bazaar Plaza 3rd Floor, Moi Ave, Nairobi CBD'
-            : deliveryLocation.trim() || undefined,
+            ? BUSINESS_CONFIG.location
+            : trimmedLocation,
         orderNotes: orderNotes.trim() || undefined,
         paymentMethod,
       });
@@ -143,7 +161,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <Store className="w-4 h-4 text-[#2D4C3D]" />
                 </div>
                 <div className="font-semibold text-xs text-[#1F372C]">Shop Pickup</div>
-                <div className="text-[10px] text-[#5D6B61]">CBD (Free)</div>
+                <div className="text-[10px] text-[#5D6B61]">Odeon CBD (Free)</div>
                 <input
                   type="radio"
                   name="deliveryMethod"
@@ -181,48 +199,51 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="space-y-1 pt-1">
                 <input
                   type="text"
+                  required
                   value={deliveryLocation}
                   onChange={(e) => setDeliveryLocation(e.target.value)}
                   placeholder={
                     deliveryMethod === 'NAIROBI_LOCAL'
-                      ? 'Estate, building, or road (or share Pin on WhatsApp)'
-                      : 'Destination town & preferred courier / matatu stage'
+                      ? 'Estate, building, or road (required for rider quote)'
+                      : 'Destination town & preferred courier / matatu stage (required)'
                   }
                   className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white focus:border-[#2D4C3D] outline-none text-[#242A24]"
                 />
               </div>
             ) : (
               <div className="p-3 rounded-xl bg-[#F3F6F4] text-xs text-[#2A4739] border border-[#DEE7E2]">
-                📍 <strong>Shop Pickup:</strong> {BUSINESS_CONFIG.location}. Mon–Sat, 8:30 AM to 6:30 PM.
+                📍 <strong>Shop Pickup:</strong> {BUSINESS_CONFIG.location}. {BUSINESS_CONFIG.hours}.
               </div>
             )}
           </div>
 
-          {/* 2. Optional Contact Details (No Credentials Required) */}
+          {/* 2. Contact Details */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-[#1F372C] uppercase tracking-wide">
-                2. Contact Info <span className="text-[11px] font-normal text-[#64746A] lowercase">(optional)</span>
+                2. Your Contact Details
               </label>
               <span className="text-[11px] text-[#245C38]">
-                WhatsApp connects us automatically
+                For delivery quote & updates
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <input
                 type="text"
+                required
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Your Name (Optional)"
+                placeholder="Your Full Name *"
                 className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white focus:border-[#2D4C3D] outline-none text-[#242A24]"
               />
 
               <input
                 type="tel"
+                required
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Phone Number (Optional)"
+                placeholder="Phone / WhatsApp (e.g. 07XX...) *"
                 className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white focus:border-[#2D4C3D] outline-none text-[#242A24]"
               />
             </div>

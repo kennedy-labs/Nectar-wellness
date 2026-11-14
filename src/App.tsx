@@ -93,10 +93,11 @@ export default function App() {
   // Initial Data Load
   useEffect(() => {
     async function loadInitialData() {
+      const loggedIn = storage.isAdminLoggedIn();
       const [prods, cats, ords] = await Promise.all([
         api.getProducts(),
         api.getCategories(),
-        api.getOrders(),
+        loggedIn ? api.getOrders() : Promise.resolve([]),
       ]);
       setProducts(prods);
       setCategories(cats);
@@ -170,8 +171,8 @@ export default function App() {
     setIsCheckoutOpen(true);
   };
 
-  const handleDirectWhatsAppCart = () => {
-    if (cart.length === 0) return;
+  const directWhatsAppCartUrl = useMemo(() => {
+    if (cart.length === 0) return '';
     const dummyOrder: Order = {
       id: 'INQUIRY-' + Math.floor(1000 + Math.random() * 9000),
       customerName: 'Customer',
@@ -196,8 +197,8 @@ export default function App() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    window.open(buildWhatsAppOrderUrl(dummyOrder), '_blank');
-  };
+    return buildWhatsAppOrderUrl(dummyOrder);
+  }, [cart]);
 
   // Order Submission Handler
   const handleSubmitOrder = async (formData: {
@@ -236,18 +237,24 @@ export default function App() {
   };
 
   // Admin Handlers
-  const handleAdminLogin = async (credentials: { email?: string; password?: string; pin?: string } | string): Promise<boolean> => {
+  const handleAdminLogin = async (credentials: { phone: string; password: string }): Promise<boolean> => {
     const res = await api.loginAdmin(credentials);
     if (res.success) {
       setIsAdminLoggedIn(true);
+      const [ords, prods] = await Promise.all([api.getOrders(), api.getProducts()]);
+      setOrders(ords);
+      setProducts(prods);
       return true;
     }
     return false;
   };
 
-  const handleAdminLogout = () => {
+  const handleAdminLogout = async () => {
     storage.setAdminLoggedIn(false);
     setIsAdminLoggedIn(false);
+    setOrders([]);
+    const activeProds = await api.getProducts();
+    setProducts(activeProds);
   };
 
   const handleUpdateDeliveryFee = async (orderId: string, fee: number, notes?: string) => {
@@ -462,7 +469,7 @@ export default function App() {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveFromCart}
         onProceedToCheckout={handleProceedToCheckout}
-        onDirectWhatsApp={handleDirectWhatsAppCart}
+        directWhatsAppUrl={directWhatsAppCartUrl}
       />
 
       <ProductDetailModal

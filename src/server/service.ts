@@ -69,6 +69,25 @@ export const service = {
       throw new Error('Order must include at least one product.');
     }
 
+    const customerName = (dto.customerName || '').trim();
+    const customerPhone = (dto.customerPhone || '').trim();
+    const cleanPhoneDigits = customerPhone.replace(/[^0-9]/g, '');
+    if (!customerName) {
+      throw new Error('Please enter your name so we can process your order.');
+    }
+    if (cleanPhoneDigits.length < 9) {
+      throw new Error('Please enter a valid phone number so we can send your delivery quote and updates.');
+    }
+
+    const deliveryMethod = dto.deliveryMethod || 'NAIROBI_LOCAL';
+    const isPickup = deliveryMethod === 'PICKUP';
+    const deliveryLocation = isPickup
+      ? BUSINESS_CONFIG.location
+      : (dto.deliveryLocation || '').trim();
+    if (!isPickup && !deliveryLocation) {
+      throw new Error('Please enter your delivery estate, landmark, or destination town.');
+    }
+
     const allProducts = repository.findAllProducts();
     const orderItems: OrderItem[] = [];
     let subtotal = 0;
@@ -95,8 +114,6 @@ export const service = {
 
     // Dynamic Delivery Handling
     // Shop pickup in Nairobi CBD is 0 KES delivery
-    const deliveryMethod = dto.deliveryMethod || 'NAIROBI_LOCAL';
-    const isPickup = deliveryMethod === 'PICKUP';
     const deliveryFee: number | null = isPickup ? 0 : null;
     const initialStatus: OrderStatus = isPickup ? 'AWAITING_PAYMENT' : 'REVIEWING_DELIVERY';
 
@@ -105,13 +122,11 @@ export const service = {
 
     const order: Order = {
       id: orderId,
-      customerName: dto.customerName?.trim() || 'WhatsApp Customer',
-      customerPhone: dto.customerPhone?.trim() || 'Via WhatsApp',
+      customerName,
+      customerPhone,
       customerEmail: dto.customerEmail?.trim() || undefined,
       deliveryMethod,
-      deliveryLocation:
-        dto.deliveryLocation?.trim() ||
-        (isPickup ? 'Bazaar Plaza 3rd Floor, Moi Ave, Nairobi CBD' : 'To be confirmed on WhatsApp'),
+      deliveryLocation,
       orderNotes: dto.orderNotes?.trim() || undefined,
       items: orderItems,
       subtotal,
@@ -209,79 +224,65 @@ export const service = {
     return repository.saveOrder(order);
   },
 
-  // Store Owner Setup & Auth Verification
+  // Store Owner Setup & Phone + Password Auth Verification
+  normalizePhone(phone: string): string {
+    const cleaned = (phone || '').replace(/[\s\-()]/g, '').trim();
+    if (!cleaned) return '';
+    if (cleaned.startsWith('+254')) return '0' + cleaned.slice(4);
+    if (cleaned.startsWith('254') && cleaned.length >= 12) return '0' + cleaned.slice(3);
+    if (/^[71]\d{8}$/.test(cleaned)) return '0' + cleaned;
+    return cleaned;
+  },
+
   getAdminSetupStatus(): AdminSetupStatus {
     const adminUser = repository.getAdminUser();
-    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
+    const envPass = (process.env.ADMIN_PASSWORD || process.env.ADMIN_PIN || '').trim();
     return {
       isClaimed: Boolean(adminUser),
+      ownerPhone: adminUser?.phone || BUSINESS_CONFIG.adminDefaultPhone,
       ownerEmail: adminUser?.email,
-      ownerName: adminUser?.name,
+      ownerName: adminUser?.name || 'Store Owner',
       claimedAt: adminUser?.claimedAt,
-      hasEnvOverride: Boolean(envPin),
+      hasEnvOverride: Boolean(envPass),
     };
   },
 
-  async setupOwner(email: string, password: string, name: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
-    const existing = repository.getAdminUser();
-    if (existing) {
-      return { success: false, error: 'Store ownership has already been registered and claimed by the owner.' };
+  authenticateAdmin(credentials: { phone?: string; password?: string }): {
+    success: boolean;
+    user?: AdminUser;
+    error?: string;
+  } {
+    const inputPhone = this.normalizePhone(credentials.phone || '');
+    const inputPassword = (credentials.password ?? '').trim();
+
+    if (!inputPhone || !inputPassword) {
+      return { success: false, error: 'Please enter both phone number and password.' };
     }
 
-    const trimmedEmail = (email || '').trim().toLowerCase();
-    const trimmedPass = (password || '').trim();
-    const trimmedName = (name || '').trim();
-
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      return { success: false, error: 'Please provide a valid email address.' };
-    }
-    if (trimmedPass.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters long.' };
-    }
-
-    const newUser: StoredAdminUser = {
-      id: `owner_${Date.now()}`,
-      email: trimmedEmail,
-      name: trimmedName || 'Store Owner',
-      passwordHash: hashPassword(trimmedPass),
-      role: 'owner',
-      claimedAt: new Date().toISOString(),
-    };
-
-    await repository.saveAdminUser(newUser);
-
-    return {
-      success: true,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        claimedAt: newUser.claimedAt,
-      },
-    };
-  },
-
-  authenticateAdmin(credentials: { email?: string; password?: string; pin?: string }): { success: boolean; user?: AdminUser; isDevAccess?: boolean; error?: string } {
     const adminUser = repository.getAdminUser();
-    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
+    const envPass = (process.env.ADMIN_PASSWORD || process.env.ADMIN_PIN || '').trim();
+    const expectedPhone = this.normalizePhone(
+      adminUser?.phone || BUSINESS_CONFIG.adminDefaultPhone
+    );
 
-    // 1. Password login by registered owner
-    if (credentials.email && credentials.password) {
-      if (!adminUser) {
-        return { success: false, error: 'Store ownership has not been claimed yet. Please complete initial owner setup.' };
+    if (inputPhone !== expectedPhone) {
+      return { success: false, error: 'Invalid phone number or password.' };
+    }
+
+    if (adminUser) {
+      const passwordMatches =
+        verifyPassword(inputPassword, adminUser.passwordHash) ||
+        Boolean(envPass && inputPassword === envPass);
+
+      if (!passwordMatches) {
+        return { success: false, error: 'Invalid phone number or password.' };
       }
-      if (credentials.email.trim().toLowerCase() !== adminUser.email.toLowerCase()) {
-        return { success: false, error: 'Unrecognized administrator email.' };
-      }
-      const match = verifyPassword(credentials.password, adminUser.passwordHash);
-      if (!match) {
-        return { success: false, error: 'Invalid password.' };
-      }
+
       return {
         success: true,
         user: {
           id: adminUser.id,
+          phone: adminUser.phone || BUSINESS_CONFIG.adminDefaultPhone,
           email: adminUser.email,
           name: adminUser.name,
           role: adminUser.role,
@@ -290,79 +291,103 @@ export const service = {
       };
     }
 
-    // 2. PIN login
-    const pin = (credentials.pin || '').trim();
-    if (pin) {
-      // If Render environment variable is configured, it always works as a server override
-      if (envPin && pin === envPin) {
-        return {
-          success: true,
-          user: adminUser ? { id: adminUser.id, email: adminUser.email, name: adminUser.name, role: adminUser.role, claimedAt: adminUser.claimedAt } : undefined,
-          isDevAccess: true,
-        };
-      }
-
-      // If store ownership is NOT claimed yet, allow developer setup access
-      if (!adminUser) {
-        const storedPin = repository.getAdminPin();
-        const valid = storedPin ? pin === storedPin : pin === BUSINESS_CONFIG.adminDefaultPin;
-        if (valid) {
-          return { success: true, isDevAccess: true };
-        }
-        return { success: false, error: 'Invalid Setup PIN.' };
-      }
-
-      // Once the store has been claimed by the real owner, PIN login is disabled
-      return { success: false, error: 'Store ownership has been claimed. Please log in using your registered owner email and password.' };
+    // Default credentials when no custom owner credentials have been saved yet
+    const defaultPassword = envPass || BUSINESS_CONFIG.adminDefaultPassword;
+    if (inputPassword !== defaultPassword) {
+      return { success: false, error: 'Invalid phone number or password.' };
     }
 
-    return { success: false, error: 'Please provide valid login credentials.' };
+    return {
+      success: true,
+      user: {
+        id: 'default_owner',
+        phone: BUSINESS_CONFIG.adminDefaultPhone,
+        name: 'Store Owner',
+        role: 'owner',
+      },
+    };
   },
 
-  async changeOwnerPassword(email: string, currentPass: string, newPass: string): Promise<{ success: boolean; error?: string }> {
+  async updateAdminCredentials(params: {
+    currentPassword: string;
+    newPhone?: string;
+    newPassword?: string;
+    name?: string;
+  }): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
     const adminUser = repository.getAdminUser();
-    if (!adminUser) {
-      return { success: false, error: 'No owner account registered.' };
-    }
-    if (adminUser.email.toLowerCase() !== (email || '').trim().toLowerCase()) {
-      return { success: false, error: 'Email does not match registered owner.' };
-    }
-    if (!verifyPassword(currentPass, adminUser.passwordHash)) {
-      return { success: false, error: 'Current password is incorrect.' };
-    }
-    if ((newPass || '').trim().length < 6) {
-      return { success: false, error: 'New password must be at least 6 characters.' };
+    const envPass = (process.env.ADMIN_PASSWORD || process.env.ADMIN_PIN || '').trim();
+    const currentPass = (params.currentPassword ?? '').trim();
+
+    if (!currentPass) {
+      return { success: false, error: 'Current password is required.' };
     }
 
-    adminUser.passwordHash = hashPassword(newPass.trim());
-    await repository.saveAdminUser(adminUser);
-    return { success: true };
+    if (adminUser) {
+      const validCurrent =
+        verifyPassword(currentPass, adminUser.passwordHash) ||
+        Boolean(envPass && currentPass === envPass);
+      if (!validCurrent) {
+        return { success: false, error: 'Current password is incorrect.' };
+      }
+    } else {
+      const defaultPassword = envPass || BUSINESS_CONFIG.adminDefaultPassword;
+      if (currentPass !== defaultPassword) {
+        return { success: false, error: 'Current password is incorrect.' };
+      }
+    }
+
+    const nextPhone = params.newPhone
+      ? this.normalizePhone(params.newPhone)
+      : this.normalizePhone(adminUser?.phone || BUSINESS_CONFIG.adminDefaultPhone);
+
+    if (!nextPhone || nextPhone.length < 9) {
+      return { success: false, error: 'Please enter a valid admin phone number.' };
+    }
+
+    const trimmedNewPass = (params.newPassword ?? '').trim();
+    if (params.newPassword !== undefined && trimmedNewPass.length > 0 && trimmedNewPass.length < 4) {
+      return { success: false, error: 'New password must be at least 4 characters long.' };
+    }
+
+    const nextPasswordHash =
+      trimmedNewPass.length >= 4
+        ? hashPassword(trimmedNewPass)
+        : adminUser?.passwordHash || hashPassword(currentPass);
+
+    const updatedUser: StoredAdminUser = {
+      id: adminUser?.id || `owner_${Date.now()}`,
+      phone: nextPhone,
+      email: adminUser?.email,
+      name: (params.name || adminUser?.name || 'Store Owner').trim(),
+      passwordHash: nextPasswordHash,
+      role: 'owner',
+      claimedAt: adminUser?.claimedAt || new Date().toISOString(),
+    };
+
+    await repository.saveAdminUser(updatedUser);
+
+    return {
+      success: true,
+      user: {
+        id: updatedUser.id,
+        phone: updatedUser.phone,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        claimedAt: updatedUser.claimedAt,
+      },
+    };
   },
 
-  verifyAdminPin(pin: string): boolean {
-    const result = this.authenticateAdmin({ pin });
-    return result.success;
-  },
-
-  async updateAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; error?: string }> {
-    const envPin = (process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || '').trim();
-    if (envPin) {
-      return {
-        success: false,
-        error: 'Admin PIN is locked by the ADMIN_PIN environment variable on your server (e.g. Render Dashboard). Update it directly in your environment variables.',
-      };
-    }
-
-    if (!this.verifyAdminPin(currentPin)) {
-      return { success: false, error: 'Current PIN is incorrect' };
-    }
-
-    const trimmedNew = (newPin || '').trim();
-    if (trimmedNew.length < 4) {
-      return { success: false, error: 'New PIN must be at least 4 characters/digits' };
-    }
-
-    await repository.setAdminPin(trimmedNew);
-    return { success: true };
+  async changeOwnerPassword(
+    currentPass: string,
+    newPass: string,
+    newPhone?: string
+  ): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+    return this.updateAdminCredentials({
+      currentPassword: currentPass,
+      newPassword: newPass,
+      newPhone,
+    });
   },
 };

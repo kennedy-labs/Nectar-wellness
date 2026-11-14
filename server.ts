@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import http from 'http';
 import fs from 'fs';
 import { execSync } from 'child_process';
@@ -9,9 +9,27 @@ import { createServer as createViteServer } from 'vite';
 import { repository } from './src/server/repository.js';
 import { service } from './src/server/service.js';
 import { initPostgres } from './src/server/postgres.js';
+import { createAdminToken, verifyAdminToken } from './src/server/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function extractBearerToken(req: Request): string | null {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) return null;
+  return header.slice(7).trim();
+}
+
+function isAdminRequest(req: Request): boolean {
+  return Boolean(verifyAdminToken(extractBearerToken(req)));
+}
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!isAdminRequest(req)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized. Please sign in as admin.' });
+  }
+  next();
+}
 
 async function startServer() {
   const app = express();
@@ -31,16 +49,18 @@ async function startServer() {
   app.use(express.json());
 
   // Products API
-  app.get('/api/products', (_req: Request, res: Response) => {
+  app.get('/api/products', (req: Request, res: Response) => {
     try {
-      const products = service.listAllProducts();
+      const products = isAdminRequest(req)
+        ? service.listAllProducts()
+        : service.listActiveProducts();
       res.json({ success: true, data: products });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  app.post('/api/products', (req: Request, res: Response) => {
+  app.post('/api/products', requireAdmin, (req: Request, res: Response) => {
     try {
       const product = service.createOrUpdateProduct(req.body);
       res.json({ success: true, data: product });
@@ -49,7 +69,7 @@ async function startServer() {
     }
   });
 
-  app.put('/api/products/:id', (req: Request, res: Response) => {
+  app.put('/api/products/:id', requireAdmin, (req: Request, res: Response) => {
     try {
       const product = service.createOrUpdateProduct({ ...req.body, id: req.params.id });
       res.json({ success: true, data: product });
@@ -58,7 +78,7 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/products/:id', (req: Request, res: Response) => {
+  app.delete('/api/products/:id', requireAdmin, (req: Request, res: Response) => {
     try {
       const ok = repository.deleteProduct(req.params.id);
       res.json({ success: ok });
@@ -67,7 +87,7 @@ async function startServer() {
     }
   });
 
-  app.patch('/api/products/:id/stock', (req: Request, res: Response) => {
+  app.patch('/api/products/:id/stock', requireAdmin, (req: Request, res: Response) => {
     try {
       const { stockQuantity } = req.body;
       const updated = service.updateStock(req.params.id, Number(stockQuantity));
@@ -89,7 +109,7 @@ async function startServer() {
   });
 
   // Orders API
-  app.get('/api/orders', (_req: Request, res: Response) => {
+  app.get('/api/orders', requireAdmin, (_req: Request, res: Response) => {
     try {
       const orders = repository.findAllOrders();
       res.json({ success: true, data: orders });
@@ -117,7 +137,7 @@ async function startServer() {
     }
   });
 
-  app.patch('/api/orders/:id/delivery-fee', (req: Request, res: Response) => {
+  app.patch('/api/orders/:id/delivery-fee', requireAdmin, (req: Request, res: Response) => {
     try {
       const { deliveryFee, adminNotes } = req.body;
       const updated = service.updateDeliveryFee(req.params.id, Number(deliveryFee), adminNotes);
@@ -128,7 +148,7 @@ async function startServer() {
     }
   });
 
-  app.patch('/api/orders/:id/status', (req: Request, res: Response) => {
+  app.patch('/api/orders/:id/status', requireAdmin, (req: Request, res: Response) => {
     try {
       const { status, adminNotes } = req.body;
       const updated = service.updateOrderStatus(req.params.id, status, adminNotes);
@@ -139,7 +159,7 @@ async function startServer() {
     }
   });
 
-  app.patch('/api/orders/:id/payment', (req: Request, res: Response) => {
+  app.patch('/api/orders/:id/payment', requireAdmin, (req: Request, res: Response) => {
     try {
       const { paymentReference } = req.body || {};
       const updated = service.confirmPayment(req.params.id, paymentReference);
@@ -150,7 +170,7 @@ async function startServer() {
     }
   });
 
-  app.patch('/api/orders/:id/payment/revert', (req: Request, res: Response) => {
+  app.patch('/api/orders/:id/payment/revert', requireAdmin, (req: Request, res: Response) => {
     try {
       const updated = service.revertPayment(req.params.id);
       if (!updated) return res.status(404).json({ success: false, error: 'Order not found' });
@@ -160,46 +180,36 @@ async function startServer() {
     }
   });
 
-  // Admin Auth & Setup Routes
+  // Admin Auth & Credentials Routes
   app.get('/api/admin/setup-status', (_req: Request, res: Response) => {
     res.json({ success: true, data: service.getAdminSetupStatus() });
   });
 
-  app.post('/api/admin/setup-owner', async (req: Request, res: Response) => {
-    const { email, password, name } = req.body;
-    const result = await service.setupOwner(email, password, name);
-    if (result.success) {
-      res.json({
-        success: true,
-        token: 'nnw_owner_session_' + Date.now(),
-        user: result.user,
-        message: 'Owner registration successful. Store ownership claimed.',
-      });
-    } else {
-      res.status(400).json({ success: false, error: result.error });
-    }
-  });
-
   app.post('/api/admin/login', (req: Request, res: Response) => {
-    const { email, password, pin } = req.body;
-    const result = service.authenticateAdmin({ email, password, pin });
+    const { phone, password } = req.body || {};
+    const result = service.authenticateAdmin({ phone, password });
     if (result.success) {
+      const token = createAdminToken(result.user?.id || 'default_owner');
       res.json({
         success: true,
-        token: 'nnw_owner_session_' + Date.now(),
+        token,
         user: result.user,
-        isDevAccess: result.isDevAccess,
       });
     } else {
       res.status(401).json({ success: false, error: result.error || 'Authentication failed' });
     }
   });
 
-  app.post('/api/admin/change-password', async (req: Request, res: Response) => {
-    const { email, currentPassword, newPassword } = req.body;
-    const result = await service.changeOwnerPassword(email, currentPassword, newPassword);
+  app.post('/api/admin/change-password', requireAdmin, async (req: Request, res: Response) => {
+    const { currentPassword, newPassword, newPhone, name } = req.body || {};
+    const result = await service.updateAdminCredentials({
+      currentPassword,
+      newPassword,
+      newPhone,
+      name,
+    });
     if (result.success) {
-      res.json({ success: true, message: 'Password updated successfully' });
+      res.json({ success: true, user: result.user, message: 'Admin credentials updated successfully' });
     } else {
       res.status(400).json({ success: false, error: result.error });
     }
@@ -207,16 +217,6 @@ async function startServer() {
 
   app.get('/api/admin/security-status', (_req: Request, res: Response) => {
     res.json({ success: true, data: service.getAdminSetupStatus() });
-  });
-
-  app.post('/api/admin/change-pin', async (req: Request, res: Response) => {
-    const { currentPin, newPin } = req.body;
-    const result = await service.updateAdminPin(currentPin, newPin);
-    if (result.success) {
-      res.json({ success: true, message: 'Admin PIN updated successfully' });
-    } else {
-      res.status(400).json({ success: false, error: result.error });
-    }
   });
 
   // Explicit SEO Routes
@@ -267,7 +267,7 @@ async function startServer() {
     if (!fs.existsSync(indexPath)) {
       console.log('📦 Client bundle not found. Building with Vite for production...');
       try {
-        execSync('npm run build || bun run build || npx vite build', { stdio: 'inherit' });
+        execSync('npm run build || npx vite build', { stdio: 'inherit' });
       } catch (buildErr: any) {
         console.error('Failed to auto-build client bundle:', buildErr.message);
       }

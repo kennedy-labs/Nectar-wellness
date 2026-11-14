@@ -18,7 +18,7 @@ export function getPostgresPool(): Pool | null {
       ssl: {
         rejectUnauthorized: false,
       },
-      max: 10,
+      max: 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     });
@@ -107,13 +107,15 @@ export async function initPostgres(initialCategories: Category[], initialProduct
 
         CREATE TABLE IF NOT EXISTS admin_users (
           id VARCHAR(64) PRIMARY KEY,
-          email VARCHAR(255) UNIQUE NOT NULL,
+          phone VARCHAR(64),
+          email VARCHAR(255),
           name VARCHAR(255) NOT NULL,
           password_hash TEXT NOT NULL,
           role VARCHAR(64) NOT NULL DEFAULT 'owner',
           claimed_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+        ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS phone VARCHAR(64);
       `);
 
       // Check if categories need initial seeding
@@ -411,7 +413,8 @@ export const postgresDb = {
         const row = res.rows[0];
         return {
           id: row.id,
-          email: row.email,
+          phone: row.phone || undefined,
+          email: row.email || undefined,
           name: row.name,
           passwordHash: row.password_hash,
           role: row.role,
@@ -430,14 +433,15 @@ export const postgresDb = {
     if (!p) return false;
     try {
       await p.query(
-        `INSERT INTO admin_users (id, email, name, password_hash, role, claimed_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        `INSERT INTO admin_users (id, phone, email, name, password_hash, role, claimed_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
          ON CONFLICT (id) DO UPDATE SET
+           phone = EXCLUDED.phone,
            email = EXCLUDED.email,
            name = EXCLUDED.name,
            password_hash = EXCLUDED.password_hash,
            updated_at = NOW()`,
-        [user.id, user.email, user.name, user.passwordHash, user.role, user.claimedAt]
+        [user.id, user.phone, user.email || null, user.name, user.passwordHash, user.role, user.claimedAt]
       );
       await this.setSetting('admin_user', JSON.stringify(user));
       return true;

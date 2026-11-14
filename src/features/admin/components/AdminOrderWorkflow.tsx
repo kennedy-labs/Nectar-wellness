@@ -699,7 +699,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               rows={2}
               value={adminNotesInput}
               onChange={(e) => setAdminNotesInput(e.target.value)}
-              placeholder="e.g. Bolt Rider John (0712345678) assigned. Pack with dosing spoon."
+              placeholder="e.g. Bolt Rider John (07XX XXX XXX) assigned. Pack with dosing spoon."
               className="w-full p-2.5 text-xs bg-[#F8FAF8] border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D]"
             />
           </div>

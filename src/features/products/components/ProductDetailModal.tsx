@@ -75,7 +75,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       ? 'Out of Stock'
                       : isLowStock
                       ? `Only ${product.stockQuantity} remaining`
-                      : 'In Stock at Bazaar Plaza'}
+                      : 'In Stock · Odeon, Nairobi CBD'}
                   </span>
                 </div>
                 <h2 className="font-display text-xl sm:text-2xl text-[#172A22] leading-snug">

@@ -10,7 +10,7 @@ interface CartDrawerProps {
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onProceedToCheckout: () => void;
-  onDirectWhatsApp: () => void;
+  directWhatsAppUrl: string;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -20,7 +20,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onProceedToCheckout,
-  onDirectWhatsApp,
+  directWhatsAppUrl,
 }) => {
   if (!isOpen) return null;
 
@@ -158,7 +158,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
               {/* Informative logistics note */}
               <div className="p-2.5 rounded-lg bg-[#EBF2EE] border border-[#D5E4DB] text-[11px] text-[#2F4E3E] leading-tight">
-                💡 <strong>Dynamic Delivery:</strong> Free shop pickup in Nairobi CBD. Local Bolt rider or Countrywide matatu parcel fees confirmed based on your location for the best rate.
+                💡 <strong>Dynamic Delivery:</strong> Free shop pickup at Odeon, Nairobi CBD. Local Bolt rider or Countrywide matatu parcel fees confirmed based on your location for the best rate.
               </div>
 
               <div className="space-y-2 pt-1">
@@ -170,13 +170,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                <button
-                  onClick={onDirectWhatsApp}
-                  className="w-full bg-white hover:bg-[#F2F6F3] text-[#1E3B2F] border border-[#CCD8CF] py-2.5 px-4 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                <a
+                  href={directWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-white hover:bg-[#F2F6F3] text-[#1E3B2F] border border-[#CCD8CF] py-2.5 px-4 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4 text-[#2E7D32]" />
                   <span>Send Cart Directly to WhatsApp</span>
-                </button>
+                </a>
               </div>
             </div>
           )}
