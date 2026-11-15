@@ -70,18 +70,8 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto-search if initialOrderId provided
-  React.useEffect(() => {
-    if (initialOrderId) {
-      setQuery(initialOrderId);
-      handleSearch(initialOrderId);
-    }
-  }, [initialOrderId]);
-
-  if (!isOpen) return null;
-
-  const handleSearch = async (idToSearch?: string) => {
-    const term = (idToSearch || query).trim();
+  const handleSearch = React.useCallback(async (idToSearch?: string) => {
+    const term = (idToSearch ?? query).trim();
     if (!term) return;
 
     setLoading(true);
@@ -101,7 +91,19 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onSearchOrder, query]);
+
+  // Sync query and auto-search when opened with an initialOrderId
+  React.useEffect(() => {
+    if (initialOrderId) {
+      setQuery(initialOrderId);
+      if (isOpen) {
+        handleSearch(initialOrderId);
+      }
+    }
+  }, [initialOrderId, isOpen, handleSearch]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
@@ -173,12 +175,12 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                     #{order.id}
                   </span>
                   <span className="text-xs font-semibold text-[#2D4C3D]">
-                    {STATUS_CONFIG[order.status].label}
+                    {STATUS_CONFIG[order.status]?.label || order.status}
                   </span>
                 </div>
 
                 <p className="text-xs text-[#4F5E53] leading-relaxed">
-                  {STATUS_CONFIG[order.status].description}
+                  {STATUS_CONFIG[order.status]?.description || 'Your order is being processed.'}
                 </p>
 
                 {order.adminNotes && (

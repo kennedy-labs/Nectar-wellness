@@ -85,6 +85,17 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
             <MessageCircle className="w-4 h-4 fill-white text-[#25D366]" />
             <span>Continue Order on WhatsApp Now</span>
           </a>
+
+          <div className="pt-1 border-t border-[#D7E8DD] text-[11px] text-[#455A4C] flex flex-wrap items-center justify-between gap-2">
+            <span>No WhatsApp on this phone?</span>
+            <span className="font-semibold text-[#1B3627]">
+              Call / SMS{' '}
+              <a href={`tel:${BUSINESS_CONFIG.adminDefaultPhone}`} className="underline hover:text-[#245C38]">
+                {BUSINESS_CONFIG.phoneDisplay}
+              </a>{' '}
+              with #{order.id}
+            </span>
+          </div>
         </div>
 
         {/* Payment Details Box */}
