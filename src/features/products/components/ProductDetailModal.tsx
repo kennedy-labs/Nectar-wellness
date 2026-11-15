@@ -31,9 +31,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 pb-24 sm:p-6 animate-in fade-in duration-200">
       <div
-        className="relative bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-[#E6E4DD] overflow-hidden my-8"
+        className="relative bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-[#E6E4DD] overflow-hidden my-4 sm:my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -199,7 +199,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 className="w-full py-2.5 px-4 rounded-lg text-xs font-medium text-[#1E3B2F] bg-[#EAF2ED] hover:bg-[#DDE9E1] border border-[#C5D9CC] flex items-center justify-center gap-2 transition-colors"
               >
                 <MessageCircle className="w-4 h-4 text-[#2E7D32]" />
-                <span>Ask Herbalist About This Product on WhatsApp</span>
+                <span>Chat on WhatsApp About This Product</span>
               </a>
             </div>
           </div>

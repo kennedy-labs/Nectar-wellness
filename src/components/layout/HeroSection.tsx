@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowDown, MessageCircle, Sparkles, MapPin } from 'lucide-react';
-import { BUSINESS_CONFIG } from '../../config/constants';
+import { buildWhatsAppGeneralUrl } from '../../lib/whatsapp';
 
 interface HeroSectionProps {
   onExploreClick: () => void;
@@ -49,9 +49,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               </button>
 
               <a
-                href={`https://wa.me/${BUSINESS_CONFIG.whatsappPhoneDigits}?text=${encodeURIComponent(
-                  "Habari Nature's Nectar Wellness! 🌿 I would like to consult on the best herbal remedy for my wellness routine."
-                )}`}
+                href={buildWhatsAppGeneralUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-transparent hover:bg-[#EAEFEA] text-[#20392D] border border-[#CAD9CF] px-5 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"

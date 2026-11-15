@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from './lib/api';
 import { storage } from './lib/storage';
-import { buildWhatsAppOrderUrl } from './lib/whatsapp';
+import { buildWhatsAppCartInquiryUrl } from './lib/whatsapp';
 import { CartItem, Category, DeliveryMethod, Order, OrderStatus, PaymentMethod, Product } from './types';
 
 // Layout Components
@@ -105,8 +105,14 @@ export default function App() {
       setCart(storage.getCart());
       setIsAdminLoggedIn(storage.isAdminLoggedIn());
 
-      // Check if user came from a WhatsApp tracking link (?track=NNW-XXXX)
+      // Check if user came from a WhatsApp tracking link (?track=NNW-XXXX) or product link (?product=slug)
       const urlParams = new URLSearchParams(window.location.search);
+      const prodParam = urlParams.get('product');
+      if (prodParam && prods.length > 0) {
+        const matched = prods.find((p) => p.slug === prodParam || p.id === prodParam);
+        if (matched) setSelectedProduct(matched);
+      }
+
       const trackParam = urlParams.get('track');
       if (trackParam) {
         setTrackOrderId(trackParam);
@@ -173,31 +179,7 @@ export default function App() {
 
   const directWhatsAppCartUrl = useMemo(() => {
     if (cart.length === 0) return '';
-    const dummyOrder: Order = {
-      id: 'INQUIRY-' + Math.floor(1000 + Math.random() * 9000),
-      customerName: 'Customer',
-      customerPhone: '',
-      deliveryMethod: 'NAIROBI_LOCAL',
-      deliveryLocation: 'To be determined',
-      items: cart.map((c) => ({
-        id: c.product.id,
-        productId: c.product.id,
-        productName: c.product.name,
-        productSlug: c.product.slug,
-        productImage: c.product.image,
-        quantity: c.quantity,
-        priceAtPurchase: c.product.price,
-      })),
-      subtotal: cart.reduce((s, i) => s + i.product.price * i.quantity, 0),
-      deliveryFee: null,
-      totalAmount: cart.reduce((s, i) => s + i.product.price * i.quantity, 0),
-      paymentMethod: 'MPESA_BUY_GOODS',
-      paymentStatus: 'UNPAID',
-      status: 'REVIEWING_DELIVERY',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    return buildWhatsAppOrderUrl(dummyOrder);
+    return buildWhatsAppCartInquiryUrl(cart);
   }, [cart]);
 
   // Order Submission Handler
@@ -458,8 +440,11 @@ export default function App() {
         onScrollToProducts={scrollToProducts}
       />
 
-      {/* Quick Floating WhatsApp CTA for Customers */}
-      <WhatsAppFloatingButton />
+      {/* Quick Floating WhatsApp CTA for Customers (context-aware for selected product) */}
+      <WhatsAppFloatingButton
+        selectedProduct={selectedProduct}
+        hidden={isCartOpen || isCheckoutOpen || Boolean(completedOrder) || isTrackOpen}
+      />
 
       {/* Customer Drawers & Modals */}
       <CartDrawer

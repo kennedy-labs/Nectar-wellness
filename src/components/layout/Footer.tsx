@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldAlert, MapPin, Phone, Clock, MessageCircle } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../config/constants';
+import { buildWhatsAppGeneralUrl } from '../../lib/whatsapp';
 
 interface FooterProps {
   onOpenTrack: () => void;
@@ -27,7 +28,7 @@ export const Footer: React.FC<FooterProps> = ({
             </p>
             <div className="pt-2">
               <a
-                href={`https://wa.me/${BUSINESS_CONFIG.whatsappPhoneDigits}`}
+                href={buildWhatsAppGeneralUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-[#2D4E3F] hover:bg-[#3B6552] text-[#F3F7F4] px-3.5 py-2 rounded-lg text-xs font-medium transition-colors"
