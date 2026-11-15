@@ -4,10 +4,14 @@ import { Category, Order, OrderItem, Product } from '../types/index.js';
 let pool: Pool | null = null;
 let isConnected = false;
 
+function getCleanDatabaseUrl(): string {
+  return (process.env.DATABASE_URL || '').trim().replace(/^['"]|['"]$/g, '');
+}
+
 export function getPostgresPool(): Pool | null {
   if (pool) return pool;
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = getCleanDatabaseUrl();
   if (!connectionString) {
     return null;
   }
@@ -20,7 +24,7 @@ export function getPostgresPool(): Pool | null {
       },
       max: 5,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 25000,
     });
 
     pool.on('error', (err) => {
@@ -41,9 +45,10 @@ export async function initPostgres(initialCategories: Category[], initialProduct
     return false;
   }
 
-  try {
-    const client = await p.connect();
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
+      const client = await p.connect();
+      try {
       // 1. Create categories table
       await client.query(`
         CREATE TABLE IF NOT EXISTS categories (
@@ -167,14 +172,19 @@ export async function initPostgres(initialCategories: Category[], initialProduct
       isConnected = true;
       console.log('✅ Connected to Neon PostgreSQL database successfully.');
       return true;
-    } finally {
-      client.release();
+      } finally {
+        client.release();
+      }
+    } catch (err: any) {
+      console.error(`⚠️ Neon PostgreSQL connection attempt ${attempt}/2 failed:`, err?.message || err);
+      isConnected = false;
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
     }
-  } catch (err: any) {
-    console.error('⚠️ Could not connect to Neon PostgreSQL, continuing with file database:', err.message);
-    isConnected = false;
-    return false;
   }
+  console.error('⚠️ Could not connect to Neon PostgreSQL, continuing with file database.');
+  return false;
 }
 
 export function isPostgresReady(): boolean {
