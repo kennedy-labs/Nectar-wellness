@@ -1,32 +1,30 @@
-import React, { useState } from 'react';
-import { CheckCircle2, MessageCircle, Copy, Check, Clock, Eye, X } from 'lucide-react';
+import React from 'react';
+import { CheckCircle2, MessageCircle, Eye, X } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../../config/constants';
-import { formatKES } from '../../../lib/utils';
 import { buildWhatsAppOrderUrl } from '../../../lib/whatsapp';
 import { Order } from '../../../types';
+import { MpesaPayBox } from './MpesaPayBox';
 
 interface OrderSuccessModalProps {
   order: Order | null;
+  mpesaTill?: string;
+  mpesaStoreName?: string;
   onClose: () => void;
   onTrackOrder: (orderId: string) => void;
+  onOrderUpdated?: (order: Order) => void;
 }
 
 export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
   order,
+  mpesaTill,
+  mpesaStoreName,
   onClose,
   onTrackOrder,
+  onOrderUpdated,
 }) => {
-  const [copiedTill, setCopiedTill] = useState(false);
-
   if (!order) return null;
 
   const whatsappUrl = buildWhatsAppOrderUrl(order);
-
-  const handleCopyTill = () => {
-    navigator.clipboard.writeText(BUSINESS_CONFIG.mpesaTill);
-    setCopiedTill(true);
-    setTimeout(() => setCopiedTill(false), 2000);
-  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
@@ -98,47 +96,13 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
           </div>
         </div>
 
-        {/* Payment Details Box */}
-        <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#E8E6DF] text-left space-y-2.5 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-[#1F372C]">M-Pesa Buy Goods Till</span>
-            <button
-              onClick={handleCopyTill}
-              className="text-[#2D4C3D] hover:text-[#183023] flex items-center gap-1 font-medium cursor-pointer"
-            >
-              {copiedTill ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-[#2E7D32]" />
-                  <span>Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy Till</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-[#E0DED7]">
-            <span className="text-[#5B665E]">Till Number:</span>
-            <span className="font-mono font-bold text-sm text-[#1B3527]">
-              {BUSINESS_CONFIG.mpesaTill}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-[#637066]">
-            <span>Store Name:</span>
-            <span className="font-semibold text-[#20392D]">{BUSINESS_CONFIG.mpesaStoreName}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-[#637066] border-t border-[#EAE8E1] pt-2">
-            <span>Products Subtotal:</span>
-            <span className="font-mono font-semibold text-[#172A22] tabular-nums">
-              {formatKES(order.subtotal)}
-            </span>
-          </div>
-        </div>
+        {/* Direct M-Pesa STK Push + Buy Goods Till Box */}
+        <MpesaPayBox
+          order={order}
+          mpesaTill={mpesaTill}
+          mpesaStoreName={mpesaStoreName}
+          onOrderUpdated={onOrderUpdated}
+        />
 
         {/* Action to track */}
         <div className="flex items-center justify-center gap-3 pt-2">

@@ -177,6 +177,8 @@ export const service = {
     const wasAlreadyConfirmed = order.paymentStatus === 'CONFIRMED';
     order.paymentStatus = 'CONFIRMED';
     order.paymentReference = (paymentReference?.trim() || 'VERIFIED_VIA_SMS').toUpperCase();
+    order.mpesaStatus = 'CONFIRMED';
+    order.mpesaStatusMessage = 'Payment confirmed.';
     if (order.status === 'AWAITING_PAYMENT' || order.status === 'REVIEWING_DELIVERY' || order.status === 'PENDING') {
       order.status = 'PAID';
     }
@@ -196,6 +198,26 @@ export const service = {
     return repository.saveOrder(order);
   },
 
+  recordMpesaInitiation(orderId: string, checkoutRequestId: string, message?: string): Order | null {
+    const order = repository.findOrderById(orderId);
+    if (!order) return null;
+    order.mpesaCheckoutRequestId = checkoutRequestId;
+    order.mpesaStatus = 'PENDING';
+    order.mpesaStatusMessage = message || 'M-Pesa prompt sent to your phone.';
+    order.updatedAt = new Date().toISOString();
+    return repository.saveOrder(order);
+  },
+
+  recordMpesaResult(orderId: string, status: 'PENDING' | 'CONFIRMED' | 'FAILED', message: string): Order | null {
+    const order = repository.findOrderById(orderId);
+    if (!order) return null;
+    if (order.paymentStatus === 'CONFIRMED') return order;
+    order.mpesaStatus = status;
+    order.mpesaStatusMessage = message;
+    order.updatedAt = new Date().toISOString();
+    return repository.saveOrder(order);
+  },
+
   revertPayment(orderId: string): Order | null {
     const order = repository.findOrderById(orderId);
     if (!order) return null;
@@ -203,6 +225,8 @@ export const service = {
     const wasConfirmed = order.paymentStatus === 'CONFIRMED';
     order.paymentStatus = 'UNPAID';
     order.paymentReference = undefined;
+    order.mpesaStatus = undefined;
+    order.mpesaStatusMessage = undefined;
 
     // If order is currently in PAID, return it to AWAITING_PAYMENT
     if (order.status === 'PAID') {

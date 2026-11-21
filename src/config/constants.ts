@@ -9,7 +9,7 @@ export const BUSINESS_CONFIG = {
   phoneDisplay: "0757 122 299",
   email: "hello@naturesnectar.co.ke",
   hours: "Mon - Sat: 8:30 AM - 6:30 PM | Sun: Closed",
-  mpesaTill: "5812327",
+  mpesaTill: "",
   mpesaStoreName: "NATURES NECTAR WELLNESS",
   bankDetails: {
     bank: "Equity Bank Kenya",

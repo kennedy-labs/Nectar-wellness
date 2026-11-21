@@ -8,6 +8,7 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
+  mpesaTill?: string;
   onSubmitOrder: (formData: {
     customerName?: string;
     customerPhone?: string;
@@ -23,6 +24,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
   items,
+  mpesaTill = '',
   onSubmitOrder,
 }) => {
   const [customerName, setCustomerName] = useState('');
@@ -294,7 +296,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
             </button>
             <p className="text-[11px] text-center text-[#64746A]">
-              🔒 Instant order generation · Verified M-Pesa Buy Goods Till #{BUSINESS_CONFIG.mpesaTill}
+              {mpesaTill.trim()
+                ? `Instant order generation · Verified M-Pesa Buy Goods Till #${mpesaTill.trim()}`
+                : 'Instant order generation · M-Pesa payment details confirmed with your order'}
             </p>
           </div>
         </form>

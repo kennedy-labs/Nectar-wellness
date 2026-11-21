@@ -2,7 +2,12 @@ import React from 'react';
 import { MessageCircle, Truck, Sparkles, ShieldCheck } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../config/constants';
 
-export const TrustFeatures: React.FC = () => {
+interface TrustFeaturesProps {
+  mpesaTill?: string;
+}
+
+export const TrustFeatures: React.FC<TrustFeaturesProps> = ({ mpesaTill = '' }) => {
+  const cleanTill = mpesaTill.trim();
   return (
     <section className="py-10 border-b border-[#E8E6DF] bg-[#F7F9F7]" id="delivery-flow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,9 +45,13 @@ export const TrustFeatures: React.FC = () => {
             <div className="w-8 h-8 rounded-lg bg-[#EBF1ED] text-[#2C4C3D] flex items-center justify-center">
               <ShieldCheck className="w-4 h-4 text-[#2C4C3D]" />
             </div>
-            <h3 className="font-semibold text-sm text-[#1A2E24]">M-Pesa Buy Goods Till</h3>
+            <h3 className="font-semibold text-sm text-[#1A2E24]">
+              {cleanTill ? 'M-Pesa Buy Goods Till' : 'M-Pesa Direct Confirmation'}
+            </h3>
             <p className="text-xs text-[#525E55] leading-relaxed">
-              Pay securely via verified M-Pesa Buy Goods (Till {BUSINESS_CONFIG.mpesaTill}). Our owner verifies your payment and starts preparation immediately.
+              {cleanTill
+                ? `Pay securely via verified M-Pesa Buy Goods (Till ${cleanTill}). Our owner verifies your payment and starts preparation immediately.`
+                : 'Pay seamlessly via M-Pesa once your order total is confirmed. Our owner shares verified payment details directly on WhatsApp and prepares your order immediately.'}
             </p>
           </div>
 

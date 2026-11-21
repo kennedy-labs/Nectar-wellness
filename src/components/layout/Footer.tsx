@@ -6,12 +6,17 @@ import { buildWhatsAppGeneralUrl } from '../../lib/whatsapp';
 interface FooterProps {
   onOpenTrack: () => void;
   onScrollToProducts: () => void;
+  mpesaTill?: string;
+  mpesaStoreName?: string;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onOpenTrack,
   onScrollToProducts,
+  mpesaTill = '',
+  mpesaStoreName = BUSINESS_CONFIG.mpesaStoreName,
 }) => {
+  const cleanTill = mpesaTill.trim();
   return (
     <footer className="bg-[#1F372C] text-[#DCE7DF] pt-14 pb-12 border-t border-[#172B22]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -99,12 +104,28 @@ export const Footer: React.FC<FooterProps> = ({
               Payment Verification
             </h4>
             <div className="p-3.5 rounded-lg bg-[#274436] border border-[#355B49] text-xs space-y-1.5 text-[#CFDDD3]">
-              <div className="font-semibold text-white">M-Pesa Buy Goods Till</div>
-              <div>Till Number: <span className="font-mono font-bold text-[#85E39C]">{BUSINESS_CONFIG.mpesaTill}</span></div>
-              <div className="text-[11px] text-[#A6BCAD]">Store Name: {BUSINESS_CONFIG.mpesaStoreName}</div>
-              <div className="text-[11px] text-[#A6BCAD] pt-1 border-t border-[#355B49]">
-                Manual verification via WhatsApp or order note confirmation.
-              </div>
+              {cleanTill ? (
+                <>
+                  <div className="font-semibold text-white">M-Pesa Buy Goods Till</div>
+                  <div>
+                    Till Number: <span className="font-mono font-bold text-[#85E39C]">{cleanTill}</span>
+                  </div>
+                  <div className="text-[11px] text-[#A6BCAD]">Store Name: {mpesaStoreName}</div>
+                  <div className="text-[11px] text-[#A6BCAD] pt-1 border-t border-[#355B49]">
+                    Instant M-Pesa prompt or manual Till payment verified via WhatsApp.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-white">Direct M-Pesa & WhatsApp</div>
+                  <div>
+                    Order Line: <span className="font-mono font-bold text-[#85E39C]">{BUSINESS_CONFIG.phoneDisplay}</span>
+                  </div>
+                  <div className="text-[11px] text-[#A6BCAD] pt-1 border-t border-[#355B49]">
+                    Verified M-Pesa payment details are confirmed directly with your order on WhatsApp.
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

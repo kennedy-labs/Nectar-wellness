@@ -68,6 +68,9 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentStatus: 'UNPAID' | 'CONFIRMED';
   paymentReference?: string;
+  mpesaCheckoutRequestId?: string;
+  mpesaStatus?: 'PENDING' | 'CONFIRMED' | 'FAILED';
+  mpesaStatusMessage?: string;
   status: OrderStatus;
   adminNotes?: string;
   createdAt: string;
@@ -95,5 +98,16 @@ export interface AdminSetupStatus {
   ownerName?: string;
   claimedAt?: string;
   hasEnvOverride?: boolean;
+}
+
+export interface PaymentSettings {
+  mpesaTill: string;
+  mpesaStoreName: string;
+}
+
+export interface MpesaPublicConfig {
+  enabled: boolean;
+  till: string;
+  storeName: string;
 }
 

@@ -12,7 +12,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { BUSINESS_CONFIG } from '../../../config/constants';
-import { AdminSetupStatus, Category, Order, OrderStatus, Product } from '../../../types';
+import { AdminSetupStatus, Category, MpesaPublicConfig, Order, OrderStatus, Product } from '../../../types';
 import { api } from '../../../lib/api';
 import { AdminInventoryTable } from '../components/AdminInventoryTable';
 import { AdminOrderManagement } from '../components/AdminOrderManagement';
@@ -23,6 +23,9 @@ interface AdminPageProps {
   products: Product[];
   categories: Category[];
   isLoggedIn: boolean;
+  mpesaTill?: string;
+  mpesaStoreName?: string;
+  onPaymentConfigUpdated?: (cfg: MpesaPublicConfig) => void;
   onLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
   onLogout: () => void;
   onNavigateHome: () => void;
@@ -42,6 +45,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   products,
   categories,
   isLoggedIn,
+  mpesaTill = '',
+  mpesaStoreName = BUSINESS_CONFIG.mpesaStoreName,
+  onPaymentConfigUpdated,
   onLogin,
   onLogout,
   onNavigateHome,
@@ -76,6 +82,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   } | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Payment & M-Pesa Till Configuration State
+  const [tillInput, setTillInput] = useState(mpesaTill);
+  const [storeNameInput, setStoreNameInput] = useState(mpesaStoreName);
+  const [paymentSettingsMsg, setPaymentSettingsMsg] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const [paymentSettingsLoading, setPaymentSettingsLoading] = useState(false);
+
   // Workspace Tabs & Modals
   const [activeTab, setActiveTab] = useState<'ORDERS' | 'INVENTORY' | 'SETTINGS'>('ORDERS');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -83,9 +98,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
   const fetchSetupStatus = async () => {
     try {
-      const status = await api.getAdminSetupStatus();
+      const [status, mpesaCfg] = await Promise.all([
+        api.getAdminSetupStatus(),
+        api.getMpesaConfig(),
+      ]);
       setSetupStatus(status);
       setNewPhoneInput(status.ownerPhone || BUSINESS_CONFIG.adminDefaultPhone);
+      setTillInput(mpesaCfg.till || '');
+      setStoreNameInput(mpesaCfg.storeName || BUSINESS_CONFIG.mpesaStoreName);
     } catch {
       // Fallback
     } finally {
@@ -96,6 +116,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   useEffect(() => {
     fetchSetupStatus();
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    setTillInput(mpesaTill || '');
+  }, [mpesaTill]);
+
+  useEffect(() => {
+    if (mpesaStoreName) setStoreNameInput(mpesaStoreName);
+  }, [mpesaStoreName]);
+
+  const handleSavePaymentSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPaymentSettingsMsg(null);
+    const cleanedTill = tillInput.trim();
+    if (cleanedTill && !/^\d{4,12}$/.test(cleanedTill)) {
+      setPaymentSettingsMsg({
+        type: 'error',
+        text: 'M-Pesa Buy Goods Till must be 4 to 12 digits (or leave empty until your Till is registered).',
+      });
+      return;
+    }
+
+    setPaymentSettingsLoading(true);
+    try {
+      const res = await api.updatePaymentSettings({
+        mpesaTill: cleanedTill,
+        mpesaStoreName: storeNameInput.trim() || BUSINESS_CONFIG.mpesaStoreName,
+      });
+      if (res.success && res.data) {
+        onPaymentConfigUpdated?.(res.data);
+        setTillInput(res.data.till || '');
+        setStoreNameInput(res.data.storeName || BUSINESS_CONFIG.mpesaStoreName);
+        setPaymentSettingsMsg({
+          type: 'success',
+          text: res.message || 'M-Pesa Buy Goods settings saved!',
+        });
+      } else {
+        setPaymentSettingsMsg({
+          type: 'error',
+          text: res.error || 'Failed to save M-Pesa settings.',
+        });
+      }
+    } catch {
+      setPaymentSettingsMsg({ type: 'error', text: 'Network request failed.' });
+    } finally {
+      setPaymentSettingsLoading(false);
+    }
+  };
 
   // Handle Login Submit
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -389,6 +456,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           <div className="space-y-6">
             <AdminOrderManagement
               orders={orders}
+              mpesaTill={tillInput}
+              mpesaStoreName={storeNameInput}
               onUpdateDeliveryFee={onUpdateDeliveryFee}
               onUpdateStatus={onUpdateStatus}
               onConfirmPayment={onConfirmPayment}
@@ -570,22 +639,71 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             </div>
 
             {/* M-Pesa Buy Goods Configuration */}
-            <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4">
-              <h3 className="font-display font-medium text-base text-[#1A2E23]">
-                M-Pesa Buy Goods Configuration
-              </h3>
-              <div className="space-y-2 text-xs text-[#45544A]">
-                <div className="flex justify-between p-2.5 bg-[#F6F8F6] rounded-lg">
-                  <span className="text-[#64746A]">Till Number:</span>
-                  <span className="font-mono font-bold text-sm text-[#1B3527]">
-                    {BUSINESS_CONFIG.mpesaTill}
+            <form
+              onSubmit={handleSavePaymentSettings}
+              className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-display font-medium text-base text-[#1A2E23]">
+                  M-Pesa Buy Goods Till
+                </h3>
+                {tillInput.trim() ? (
+                  <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]">
+                    Till Active
                   </span>
+                ) : (
+                  <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#F4F6F4] text-[#5D6B62] border border-[#DCE2DD]">
+                    Not Set Yet
+                  </span>
+                )}
+              </div>
+
+              <p className="text-xs text-[#5D6B62] leading-relaxed">
+                Leave Till Number empty until your real Lipa na M-Pesa Till is registered. Add it anytime to activate live storefront Till display immediately without code changes.
+              </p>
+
+              {paymentSettingsMsg && (
+                <div
+                  className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                    paymentSettingsMsg.type === 'success'
+                      ? 'bg-[#EBF5EF] text-[#245C38] border border-[#C5E1CF]'
+                      : 'bg-[#FDF2F2] text-[#C53030] border border-[#F8D7D7]'
+                  }`}
+                >
+                  {paymentSettingsMsg.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-[#245C38]" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 shrink-0 text-[#C53030]" />
+                  )}
+                  <span>{paymentSettingsMsg.text}</span>
                 </div>
-                <div className="flex justify-between p-2.5 bg-[#F6F8F6] rounded-lg">
-                  <span className="text-[#64746A]">Account Store Name:</span>
-                  <span className="font-semibold text-[#1B3527]">
-                    {BUSINESS_CONFIG.mpesaStoreName}
-                  </span>
+              )}
+
+              <div className="space-y-3 text-xs text-[#45544A]">
+                <div>
+                  <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
+                    Buy Goods Till Number (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={tillInput}
+                    onChange={(e) => setTillInput(e.target.value)}
+                    placeholder="Add real M-Pesa Till when ready"
+                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-[#4D5A50] mb-1">
+                    Account Store Name
+                  </label>
+                  <input
+                    type="text"
+                    value={storeNameInput}
+                    onChange={(e) => setStoreNameInput(e.target.value)}
+                    placeholder={BUSINESS_CONFIG.mpesaStoreName}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                  />
                 </div>
                 <div className="flex justify-between p-2.5 bg-[#F6F8F6] rounded-lg">
                   <span className="text-[#64746A]">Bank Account:</span>
@@ -594,7 +712,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   </span>
                 </div>
               </div>
-            </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                {tillInput && (
+                  <button
+                    type="button"
+                    disabled={paymentSettingsLoading}
+                    onClick={() => setTillInput('')}
+                    className="px-3 py-2 text-xs font-medium text-[#5D6B62] hover:text-[#1A2E23] rounded-xl border border-[#DCDAD2] cursor-pointer"
+                  >
+                    Clear Till
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={paymentSettingsLoading}
+                  className="px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {paymentSettingsLoading ? 'Saving...' : 'Save M-Pesa Settings'}
+                </button>
+              </div>
+            </form>
 
             {/* Apothecary Shop Logistics */}
             <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4">

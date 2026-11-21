@@ -100,9 +100,15 @@ export async function initPostgres(initialCategories: Category[], initialProduct
           status VARCHAR(64) NOT NULL DEFAULT 'PENDING',
           admin_notes TEXT,
           items JSONB DEFAULT '[]'::jsonb,
+          mpesa_checkout_id VARCHAR(128),
+          mpesa_status VARCHAR(32),
+          mpesa_status_message TEXT,
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS mpesa_checkout_id VARCHAR(128);
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS mpesa_status VARCHAR(32);
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS mpesa_status_message TEXT;
 
         CREATE TABLE IF NOT EXISTS app_settings (
           key VARCHAR(64) PRIMARY KEY,
@@ -231,6 +237,9 @@ function rowToOrder(row: any): Order {
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
     paymentReference: row.payment_reference || undefined,
+    mpesaCheckoutRequestId: row.mpesa_checkout_id || undefined,
+    mpesaStatus: row.mpesa_status || undefined,
+    mpesaStatusMessage: row.mpesa_status_message || undefined,
     status: row.status,
     adminNotes: row.admin_notes || undefined,
     items: Array.isArray(row.items) ? row.items : typeof row.items === 'string' ? JSON.parse(row.items) : [],
@@ -342,9 +351,10 @@ export const postgresDb = {
       INSERT INTO orders (
         id, customer_name, customer_phone, customer_email, delivery_method,
         delivery_location, order_notes, subtotal, delivery_fee, total_amount,
-        payment_method, payment_status, payment_reference, status, admin_notes,
+        payment_method, payment_status, payment_reference, mpesa_checkout_id,
+        mpesa_status, mpesa_status_message, status, admin_notes,
         items, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       ON CONFLICT (id) DO UPDATE SET
         customer_name = EXCLUDED.customer_name,
         customer_phone = EXCLUDED.customer_phone,
@@ -358,6 +368,9 @@ export const postgresDb = {
         payment_method = EXCLUDED.payment_method,
         payment_status = EXCLUDED.payment_status,
         payment_reference = EXCLUDED.payment_reference,
+        mpesa_checkout_id = EXCLUDED.mpesa_checkout_id,
+        mpesa_status = EXCLUDED.mpesa_status,
+        mpesa_status_message = EXCLUDED.mpesa_status_message,
         status = EXCLUDED.status,
         admin_notes = EXCLUDED.admin_notes,
         items = EXCLUDED.items,
@@ -378,6 +391,9 @@ export const postgresDb = {
       order.paymentMethod,
       order.paymentStatus,
       order.paymentReference || null,
+      order.mpesaCheckoutRequestId || null,
+      order.mpesaStatus || null,
+      order.mpesaStatusMessage || null,
       order.status,
       order.adminNotes || null,
       JSON.stringify(order.items || []),

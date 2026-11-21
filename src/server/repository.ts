@@ -1,4 +1,5 @@
-import { Category, Order, Product } from '../types/index.js';
+import { BUSINESS_CONFIG } from '../config/constants.js';
+import { Category, Order, PaymentSettings, Product } from '../types/index.js';
 import { db, StoredAdminUser } from './db.js';
 import { isPostgresReady, postgresDb } from './postgres.js';
 
@@ -7,12 +8,13 @@ export const repository = {
   async syncFromPostgres(): Promise<void> {
     if (!isPostgresReady()) return;
     try {
-      const [pgCategories, pgProducts, pgOrders, pgPin, pgAdminUser] = await Promise.all([
+      const [pgCategories, pgProducts, pgOrders, pgPin, pgAdminUser, pgPaymentSettings] = await Promise.all([
         postgresDb.getAllCategories(),
         postgresDb.getAllProducts(),
         postgresDb.getAllOrders(),
         postgresDb.getSetting('admin_pin'),
         postgresDb.getAdminUser(),
+        postgresDb.getSetting('payment_settings'),
       ]);
 
       const localData = db.read();
@@ -21,6 +23,19 @@ export const repository = {
       if (pgOrders.length > 0) localData.orders = pgOrders;
       if (pgPin) localData.adminPin = pgPin;
       if (pgAdminUser) localData.adminUser = pgAdminUser;
+      if (pgPaymentSettings) {
+        try {
+          const parsed = JSON.parse(pgPaymentSettings);
+          if (parsed && typeof parsed === 'object') {
+            localData.paymentSettings = {
+              mpesaTill: String(parsed.mpesaTill || '').trim(),
+              mpesaStoreName: String(parsed.mpesaStoreName || BUSINESS_CONFIG.mpesaStoreName).trim(),
+            };
+          }
+        } catch {
+          // Ignore malformed JSON setting
+        }
+      }
       db.write(localData);
       console.log('🔄 Repository synchronized from Neon PostgreSQL.');
     } catch (err: any) {
@@ -95,6 +110,10 @@ export const repository = {
   findOrderById(id: string): Order | undefined {
     return db.read().orders.find((o) => o.id === id || o.id === `NNW-${id}`);
   },
+  findOrderByCheckoutRequestId(checkoutRequestId: string): Order | undefined {
+    if (!checkoutRequestId) return undefined;
+    return db.read().orders.find((o) => o.mpesaCheckoutRequestId === checkoutRequestId);
+  },
   saveOrder(order: Order): Order {
     const data = db.read();
     const existingIndex = data.orders.findIndex((o) => o.id === order.id);
@@ -145,5 +164,30 @@ export const repository = {
         console.error('Failed to sync admin user to Neon:', err.message);
       });
     }
+  },
+
+  // Runtime Payment & M-Pesa Till Settings
+  getPaymentSettings(): PaymentSettings {
+    const saved = db.read().paymentSettings;
+    return {
+      mpesaTill: (saved?.mpesaTill || '').trim(),
+      mpesaStoreName: (saved?.mpesaStoreName || BUSINESS_CONFIG.mpesaStoreName).trim(),
+    };
+  },
+  async savePaymentSettings(settings: PaymentSettings): Promise<PaymentSettings> {
+    const cleaned: PaymentSettings = {
+      mpesaTill: (settings.mpesaTill || '').trim(),
+      mpesaStoreName: (settings.mpesaStoreName || BUSINESS_CONFIG.mpesaStoreName).trim(),
+    };
+    const data = db.read();
+    data.paymentSettings = cleaned;
+    db.write(data);
+
+    if (isPostgresReady()) {
+      await postgresDb.setSetting('payment_settings', JSON.stringify(cleaned)).catch((err) => {
+        console.error('Failed to sync payment settings to Neon:', err.message);
+      });
+    }
+    return cleaned;
   },
 };

@@ -4,11 +4,14 @@ import { BUSINESS_CONFIG } from '../../../config/constants';
 import { formatDate, formatKES } from '../../../lib/utils';
 import { buildWhatsAppOrderUrl } from '../../../lib/whatsapp';
 import { Order, OrderStatus } from '../../../types';
+import { MpesaPayBox } from '../../checkout/components/MpesaPayBox';
 
 interface OrderTrackerModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialOrderId?: string;
+  mpesaTill?: string;
+  mpesaStoreName?: string;
   onSearchOrder: (orderId: string) => Promise<Order | null>;
 }
 
@@ -28,7 +31,7 @@ const STATUS_CONFIG: Record<
   },
   AWAITING_PAYMENT: {
     label: 'Awaiting M-Pesa Payment',
-    description: `Delivery cost confirmed. Please complete payment via Till ${BUSINESS_CONFIG.mpesaTill}.`,
+    description: 'Delivery cost confirmed. Please complete payment below or via WhatsApp.',
     step: 3,
   },
   PAID: {
@@ -62,6 +65,8 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   isOpen,
   onClose,
   initialOrderId = '',
+  mpesaTill = '',
+  mpesaStoreName = BUSINESS_CONFIG.mpesaStoreName,
   onSearchOrder,
 }) => {
   const [query, setQuery] = useState(initialOrderId);
@@ -180,7 +185,9 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                 </div>
 
                 <p className="text-xs text-[#4F5E53] leading-relaxed">
-                  {STATUS_CONFIG[order.status]?.description || 'Your order is being processed.'}
+                  {order.status === 'AWAITING_PAYMENT' && mpesaTill.trim()
+                    ? `Delivery cost confirmed. Please complete payment via Till ${mpesaTill.trim()}.`
+                    : STATUS_CONFIG[order.status]?.description || 'Your order is being processed.'}
                 </p>
 
                 {order.adminNotes && (
@@ -252,6 +259,14 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                   Destination: {order.deliveryLocation} ({order.deliveryMethod.replace(/_/g, ' ')})
                 </div>
               </div>
+
+              {/* Direct M-Pesa Payment Box (STK Push or Till) */}
+              <MpesaPayBox
+                order={order}
+                mpesaTill={mpesaTill}
+                mpesaStoreName={mpesaStoreName}
+                onOrderUpdated={(updated) => setOrder(updated)}
+              />
 
               {/* WhatsApp direct continuation */}
               <a

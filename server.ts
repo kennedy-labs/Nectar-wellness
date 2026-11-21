@@ -10,6 +10,8 @@ import { repository } from './src/server/repository.js';
 import { service } from './src/server/service.js';
 import { initPostgres } from './src/server/postgres.js';
 import { createAdminToken, verifyAdminToken } from './src/server/auth.js';
+import { getMpesaConfig, initiateStkPush, queryStkPushStatus } from './src/server/mpesa.js';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -180,6 +182,153 @@ async function startServer() {
     }
   });
 
+  // Safaricom Daraja M-Pesa Direct API Routes
+  app.get('/api/mpesa/config', (_req: Request, res: Response) => {
+    const cfg = getMpesaConfig();
+    res.json({
+      success: true,
+      data: {
+        enabled: cfg.enabled,
+        till: cfg.till,
+        storeName: cfg.storeName,
+      },
+    });
+  });
+
+  app.post('/api/mpesa/stkpush', async (req: Request, res: Response) => {
+    try {
+      const { orderId, phone } = req.body || {};
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: 'Order ID is required.' });
+      }
+      const order = repository.findOrderById(String(orderId).trim());
+      if (!order) {
+        return res.status(404).json({ success: false, error: 'Order not found.' });
+      }
+      if (order.paymentStatus === 'CONFIRMED') {
+        return res.status(400).json({ success: false, error: 'This order is already paid.' });
+      }
+      if (order.deliveryMethod !== 'PICKUP' && order.deliveryFee === null) {
+        return res.status(400).json({
+          success: false,
+          error: 'Delivery fee is still awaiting confirmation before payment.',
+        });
+      }
+
+      const protoHeader = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+      const proto = protoHeader.split(',')[0].trim();
+      const host = (req.headers['x-forwarded-host'] as string) || req.get('host') || '';
+      const requestOrigin = host ? `${proto}://${host}` : 'https://nectar-wellness.onrender.com';
+
+      const stk = await initiateStkPush({
+        orderId: order.id,
+        phone: String(phone || order.customerPhone),
+        amount: order.totalAmount,
+        requestOrigin,
+      });
+
+      const updated = service.recordMpesaInitiation(
+        order.id,
+        stk.checkoutRequestId,
+        stk.customerMessage
+      );
+
+      res.json({
+        success: true,
+        data: {
+          order: updated,
+          customerMessage: stk.customerMessage,
+          phone: stk.formattedPhone,
+        },
+      });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message || 'Could not initiate M-Pesa prompt.' });
+    }
+  });
+
+  app.post('/api/mpesa/query', async (req: Request, res: Response) => {
+    try {
+      const { orderId } = req.body || {};
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: 'Order ID is required.' });
+      }
+      const order = repository.findOrderById(String(orderId).trim());
+      if (!order) {
+        return res.status(404).json({ success: false, error: 'Order not found.' });
+      }
+      if (order.paymentStatus === 'CONFIRMED') {
+        return res.json({ success: true, data: order });
+      }
+      if (!order.mpesaCheckoutRequestId) {
+        return res.json({ success: true, data: order });
+      }
+
+      const result = await queryStkPushStatus(order.mpesaCheckoutRequestId);
+      let updated: any = order;
+      if (result.status === 'CONFIRMED') {
+        updated = service.confirmPayment(order.id, order.paymentReference || 'MPESA_STK_VERIFIED');
+      } else if (result.status === 'FAILED') {
+        updated = service.recordMpesaResult(order.id, 'FAILED', result.resultDesc);
+      }
+
+      res.json({ success: true, data: updated || order });
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message || 'Could not verify payment status.' });
+    }
+  });
+
+  app.post('/api/mpesa/callback', (req: Request, res: Response) => {
+    const cfg = getMpesaConfig();
+    if (cfg.callbackToken) {
+      const provided = String(req.query.token || '');
+      const expectedBuf = Buffer.from(cfg.callbackToken);
+      const providedBuf = Buffer.from(provided);
+      if (
+        expectedBuf.length !== providedBuf.length ||
+        !crypto.timingSafeEqual(expectedBuf, providedBuf)
+      ) {
+        return res.status(403).json({ ResultCode: 1, ResultDesc: 'Forbidden' });
+      }
+    }
+
+    try {
+      const stkCallback = req.body?.Body?.stkCallback;
+      const checkoutRequestId = stkCallback?.CheckoutRequestID;
+      if (checkoutRequestId) {
+        const order = repository.findOrderByCheckoutRequestId(String(checkoutRequestId));
+        if (order && order.paymentStatus !== 'CONFIRMED') {
+          const resultCode = Number(stkCallback.ResultCode);
+          if (resultCode === 0) {
+            const items: any[] = stkCallback?.CallbackMetadata?.Item || [];
+            const receiptItem = items.find((i) => i.Name === 'MpesaReceiptNumber');
+            const amountItem = items.find((i) => i.Name === 'Amount');
+            const receipt = receiptItem?.Value ? String(receiptItem.Value) : 'MPESA_CONFIRMED';
+            const paidAmount = Number(amountItem?.Value ?? order.totalAmount);
+            if (paidAmount >= Math.floor(order.totalAmount)) {
+              service.confirmPayment(order.id, receipt);
+            } else {
+              service.recordMpesaResult(
+                order.id,
+                'FAILED',
+                `Partial amount KSh ${paidAmount} received; expected KSh ${order.totalAmount}.`
+              );
+            }
+          } else {
+            service.recordMpesaResult(
+              order.id,
+              'FAILED',
+              String(stkCallback?.ResultDesc || 'M-Pesa payment was cancelled or failed.')
+            );
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('M-Pesa callback processing error:', err?.message || err);
+    }
+
+    res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
+  });
+
   // Admin Auth & Credentials Routes
   app.get('/api/admin/setup-status', (_req: Request, res: Response) => {
     res.json({ success: true, data: service.getAdminSetupStatus() });
@@ -217,6 +366,43 @@ async function startServer() {
 
   app.get('/api/admin/security-status', (_req: Request, res: Response) => {
     res.json({ success: true, data: service.getAdminSetupStatus() });
+  });
+
+  app.post('/api/admin/payment-settings', requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const rawTill = String(req.body?.mpesaTill ?? '').trim();
+      const rawStoreName = String(req.body?.mpesaStoreName ?? '').trim();
+
+      if (rawTill && !/^\d{4,12}$/.test(rawTill)) {
+        return res.status(400).json({
+          success: false,
+          error: 'M-Pesa Buy Goods Till must be 4 to 12 digits (or left blank until ready).',
+        });
+      }
+
+      await repository.savePaymentSettings({
+        mpesaTill: rawTill,
+        mpesaStoreName: rawStoreName,
+      });
+
+      const cfg = getMpesaConfig();
+      res.json({
+        success: true,
+        data: {
+          enabled: cfg.enabled,
+          till: cfg.till,
+          storeName: cfg.storeName,
+        },
+        message: rawTill
+          ? `M-Pesa Till ${cfg.till} saved successfully.`
+          : 'M-Pesa Till cleared. Storefront will confirm payments via WhatsApp until added.',
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        error: err?.message || 'Failed to update M-Pesa payment settings.',
+      });
+    }
   });
 
   // Explicit SEO Routes

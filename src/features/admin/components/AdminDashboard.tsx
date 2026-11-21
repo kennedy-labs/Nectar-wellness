@@ -121,7 +121,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="text-xl font-bold font-mono text-[#1E3B2F] tabular-nums">
               {awaitingPaymentCount}
             </div>
-            <p className="text-[10px] text-[#697A6D]">Till {BUSINESS_CONFIG.mpesaTill} pending</p>
+            <p className="text-[10px] text-[#697A6D]">M-Pesa verification pending</p>
           </div>
 
           <div className="p-3.5 rounded-xl bg-[#F6F8F6] border border-[#DEE7E0] space-y-1">

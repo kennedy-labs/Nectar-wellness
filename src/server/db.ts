@@ -25,6 +25,10 @@ export interface DatabaseSchema {
   orders: Order[];
   adminPin?: string;
   adminUser?: StoredAdminUser | null;
+  paymentSettings?: {
+    mpesaTill: string;
+    mpesaStoreName: string;
+  };
 }
 
 function ensureDataDir() {

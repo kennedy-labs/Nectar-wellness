@@ -18,6 +18,8 @@ import { AdminOrderWorkflow } from './AdminOrderWorkflow';
 
 interface AdminOrderManagementProps {
   orders: Order[];
+  mpesaTill?: string;
+  mpesaStoreName?: string;
   onUpdateDeliveryFee: (orderId: string, fee: number, notes?: string) => Promise<void>;
   onUpdateStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<void>;
   onConfirmPayment: (orderId: string, reference?: string) => Promise<void>;
@@ -60,6 +62,8 @@ const ALL_STATUSES: { key: OrderStatus | 'ALL'; label: string; countFilter?: (or
 
 export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
   orders,
+  mpesaTill = '',
+  mpesaStoreName = '',
   onUpdateDeliveryFee,
   onUpdateStatus,
   onConfirmPayment,
@@ -77,6 +81,8 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
       <AdminOrderWorkflow
         order={selectedOrder}
         allOrders={orders}
+        mpesaTill={mpesaTill}
+        mpesaStoreName={mpesaStoreName}
         onBack={() => setSelectedOrderId(null)}
         onSelectOrder={(ord) => setSelectedOrderId(ord.id)}
         onUpdateDeliveryFee={onUpdateDeliveryFee}

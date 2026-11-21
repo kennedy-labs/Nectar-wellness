@@ -45,7 +45,10 @@ Could you kindly advise on usage, benefits, and delivery options to my location?
   return buildWhatsAppUrl(text);
 }
 
-export function buildWhatsAppCartInquiryUrl(items: CartItem[]): string {
+export function buildWhatsAppCartInquiryUrl(
+  items: CartItem[],
+  options?: { mpesaTill?: string }
+): string {
   const baseUrl = getStoreBaseUrl();
   const lines = items
     .map(
@@ -57,6 +60,10 @@ export function buildWhatsAppCartInquiryUrl(items: CartItem[]): string {
     .join('\n');
 
   const subtotal = items.reduce((s, i) => s + i.product.price * i.quantity, 0);
+  const till = (options?.mpesaTill || '').trim();
+  const closingLine = till
+    ? `Please let me know the delivery options and total to finalize via M-Pesa Till ${till}.`
+    : `Please let me know the delivery options, total, and M-Pesa payment details to finalize my order.`;
 
   const text = `Hello ${BUSINESS_CONFIG.name}!
 
@@ -66,7 +73,7 @@ ${lines}
 *Items Subtotal:* KSh ${subtotal.toLocaleString()}
 *Store:* ${baseUrl}
 
-Please let me know the delivery options and total to finalize via M-Pesa Till ${BUSINESS_CONFIG.mpesaTill}.`;
+${closingLine}`;
 
   return buildWhatsAppUrl(text);
 }
@@ -119,9 +126,12 @@ Kindly confirm delivery transport fee and total to finalize. Asante sana!`;
 
 export function buildAdminCustomerWhatsAppUrl(
   order: Order,
-  updateType: 'DELIVERY_QUOTE' | 'PAYMENT_CONFIRMED' | 'DISPATCHED'
+  updateType: 'DELIVERY_QUOTE' | 'PAYMENT_CONFIRMED' | 'DISPATCHED',
+  options?: { mpesaTill?: string; mpesaStoreName?: string }
 ): string {
   const baseUrl = getStoreBaseUrl();
+  const till = (options?.mpesaTill || '').trim();
+  const storeName = (options?.mpesaStoreName || BUSINESS_CONFIG.mpesaStoreName).trim();
 
   // Clean phone number: remove non-digits, ensure 254 prefix for Kenya
   let cleanPhone = order.customerPhone.replace(/[^0-9]/g, '');
@@ -133,6 +143,10 @@ export function buildAdminCustomerWhatsAppUrl(
 
   let text = '';
   if (updateType === 'DELIVERY_QUOTE') {
+    const paymentSection = till
+      ? `*Lipa na M-Pesa (Buy Goods Till)*\nTill Number: *${till}*\nStore Name: ${storeName}`
+      : `*M-Pesa Payment Details*\nKindly send *KSh ${order.totalAmount.toLocaleString()}* via M-Pesa to *${BUSINESS_CONFIG.phoneDisplay}* (${storeName}) and reply here with your confirmation message.`;
+
     text = `Habari ${order.customerName}! ${BUSINESS_CONFIG.name} here regarding your Order #${order.id}.
 
 We have reviewed your delivery route to *${order.deliveryLocation}*:
@@ -140,9 +154,7 @@ We have reviewed your delivery route to *${order.deliveryLocation}*:
 • Transport / Delivery Fee: KSh ${(order.deliveryFee || 0).toLocaleString()}
 *Total Amount Due: KSh ${order.totalAmount.toLocaleString()}*
 
-*Lipa na M-Pesa (Buy Goods Till)*
-Till Number: *${BUSINESS_CONFIG.mpesaTill}*
-Store Name: ${BUSINESS_CONFIG.mpesaStoreName}
+${paymentSection}
 
 *Speed up dispatch:* Kindly reply with your WhatsApp Live Location pin or landmark for the rider.
 
@@ -151,9 +163,10 @@ ${baseUrl}/?track=${order.id}
 
 Asante sana for choosing natural remedies!`;
   } else if (updateType === 'PAYMENT_CONFIRMED') {
+    const receiptDestination = till ? `on our Till (${till})` : `for your order`;
     text = `Habari ${order.customerName}! Payment Confirmed for Order #${order.id}.
 
-We have confirmed receipt of *KSh ${order.totalAmount.toLocaleString()}* on our Till (${BUSINESS_CONFIG.mpesaTill}).
+We have confirmed receipt of *KSh ${order.totalAmount.toLocaleString()}* ${receiptDestination}.
 
 Your herbal wellness remedies are now being carefully prepared and packaged in our apothecary.
 

@@ -30,6 +30,8 @@ import { Order, OrderStatus } from '../../../types';
 interface AdminOrderWorkflowProps {
   order: Order;
   allOrders: Order[];
+  mpesaTill?: string;
+  mpesaStoreName?: string;
   onBack: () => void;
   onSelectOrder: (order: Order) => void;
   onUpdateDeliveryFee: (orderId: string, fee: number, notes?: string) => Promise<void>;
@@ -91,6 +93,8 @@ const STATUS_DEFINITIONS: {
 export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   order,
   allOrders,
+  mpesaTill = '',
+  mpesaStoreName = BUSINESS_CONFIG.mpesaStoreName,
   onBack,
   onSelectOrder,
   onUpdateDeliveryFee,
@@ -98,6 +102,8 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
   onConfirmPayment,
   onRevertPayment,
 }) => {
+  const cleanTill = mpesaTill.trim();
+  const waPaymentOpts = { mpesaTill: cleanTill, mpesaStoreName };
   // Workflow View Mode: 'MANAGE' -> 'UPDATE_STATUS'
   const [activeWorkflowStep, setActiveWorkflowStep] = useState<'MANAGE' | 'UPDATE_STATUS'>('MANAGE');
 
@@ -424,17 +430,17 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                 <a
-                  href={buildAdminCustomerWhatsAppUrl(order, 'DELIVERY_QUOTE')}
+                  href={buildAdminCustomerWhatsAppUrl(order, 'DELIVERY_QUOTE', waPaymentOpts)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2.5 px-3 rounded-xl bg-[#F4F9F6] border border-[#C5E1CF] hover:bg-[#EBF5EF] text-[#1B5E20] font-medium text-xs flex items-center justify-between min-h-[42px] touch-manipulation"
                 >
-                  <span>1. Payment Request & Till</span>
+                  <span>{cleanTill ? '1. Payment Request & Till' : '1. Payment Request'}</span>
                   <Send className="w-3.5 h-3.5 opacity-70" />
                 </a>
 
                 <a
-                  href={buildAdminCustomerWhatsAppUrl(order, 'PAYMENT_CONFIRMED')}
+                  href={buildAdminCustomerWhatsAppUrl(order, 'PAYMENT_CONFIRMED', waPaymentOpts)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2.5 px-3 rounded-xl bg-[#F4F9F6] border border-[#C5E1CF] hover:bg-[#EBF5EF] text-[#1B5E20] font-medium text-xs flex items-center justify-between min-h-[42px] touch-manipulation"
@@ -444,7 +450,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
                 </a>
 
                 <a
-                  href={buildAdminCustomerWhatsAppUrl(order, 'DISPATCHED')}
+                  href={buildAdminCustomerWhatsAppUrl(order, 'DISPATCHED', waPaymentOpts)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2.5 px-3 rounded-xl bg-[#F4F9F6] border border-[#C5E1CF] hover:bg-[#EBF5EF] text-[#1B5E20] font-medium text-xs flex items-center justify-between min-h-[42px] touch-manipulation"
@@ -464,7 +470,13 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
                   M-Pesa Payment Verification
                 </span>
                 <span className="text-[11px] text-[#5D6B62]">
-                  Till: <strong>{BUSINESS_CONFIG.mpesaTill}</strong>
+                  {cleanTill ? (
+                    <>
+                      Till: <strong>{cleanTill}</strong>
+                    </>
+                  ) : (
+                    'Till not set — confirming via WhatsApp / Phone'
+                  )}
                 </span>
               </div>
               <span

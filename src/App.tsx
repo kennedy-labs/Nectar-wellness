@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { BUSINESS_CONFIG } from './config/constants';
 import { api } from './lib/api';
 import { storage } from './lib/storage';
 import { buildWhatsAppCartInquiryUrl } from './lib/whatsapp';
-import { CartItem, Category, DeliveryMethod, Order, OrderStatus, PaymentMethod, Product } from './types';
+import { CartItem, Category, DeliveryMethod, MpesaPublicConfig, Order, OrderStatus, PaymentMethod, Product } from './types';
 
 // Layout Components
 import { TopBar } from './components/layout/TopBar';
@@ -41,6 +42,11 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [paymentConfig, setPaymentConfig] = useState<MpesaPublicConfig>({
+    enabled: false,
+    till: '',
+    storeName: BUSINESS_CONFIG.mpesaStoreName,
+  });
 
   // Filtering State
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -94,14 +100,16 @@ export default function App() {
   useEffect(() => {
     async function loadInitialData() {
       const loggedIn = storage.isAdminLoggedIn();
-      const [prods, cats, ords] = await Promise.all([
+      const [prods, cats, ords, mpesaCfg] = await Promise.all([
         api.getProducts(),
         api.getCategories(),
         loggedIn ? api.getOrders() : Promise.resolve([]),
+        api.getMpesaConfig(),
       ]);
       setProducts(prods);
       setCategories(cats);
       setOrders(ords);
+      setPaymentConfig(mpesaCfg);
       setCart(storage.getCart());
       setIsAdminLoggedIn(storage.isAdminLoggedIn());
 
@@ -179,8 +187,8 @@ export default function App() {
 
   const directWhatsAppCartUrl = useMemo(() => {
     if (cart.length === 0) return '';
-    return buildWhatsAppCartInquiryUrl(cart);
-  }, [cart]);
+    return buildWhatsAppCartInquiryUrl(cart, { mpesaTill: paymentConfig.till });
+  }, [cart, paymentConfig.till]);
 
   // Order Submission Handler
   const handleSubmitOrder = async (formData: {
@@ -357,6 +365,9 @@ export default function App() {
         products={products}
         categories={categories}
         isLoggedIn={isAdminLoggedIn}
+        mpesaTill={paymentConfig.till}
+        mpesaStoreName={paymentConfig.storeName}
+        onPaymentConfigUpdated={(cfg) => setPaymentConfig(cfg)}
         onLogin={handleAdminLogin}
         onLogout={handleAdminLogout}
         onNavigateHome={() => navigateTo('/')}
@@ -394,7 +405,7 @@ export default function App() {
         <HeroSection onExploreClick={scrollToProducts} />
 
         {/* Real-World Operational Flow Explanation */}
-        <TrustFeatures />
+        <TrustFeatures mpesaTill={paymentConfig.till} />
 
         {/* Product Catalog Section */}
         <section
@@ -438,6 +449,8 @@ export default function App() {
       <Footer
         onOpenTrack={() => setIsTrackOpen(true)}
         onScrollToProducts={scrollToProducts}
+        mpesaTill={paymentConfig.till}
+        mpesaStoreName={paymentConfig.storeName}
       />
 
       {/* Quick Floating WhatsApp CTA for Customers (context-aware for selected product) */}
@@ -467,12 +480,19 @@ export default function App() {
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
         items={cart}
+        mpesaTill={paymentConfig.till}
         onSubmitOrder={handleSubmitOrder}
       />
 
       <OrderSuccessModal
         order={completedOrder}
+        mpesaTill={paymentConfig.till}
+        mpesaStoreName={paymentConfig.storeName}
         onClose={() => setCompletedOrder(null)}
+        onOrderUpdated={(updated) => {
+          setCompletedOrder(updated);
+          setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+        }}
         onTrackOrder={(id) => {
           setCompletedOrder(null);
           setTrackOrderId(id);
@@ -484,6 +504,8 @@ export default function App() {
         isOpen={isTrackOpen}
         onClose={() => setIsTrackOpen(false)}
         initialOrderId={trackOrderId}
+        mpesaTill={paymentConfig.till}
+        mpesaStoreName={paymentConfig.storeName}
         onSearchOrder={handleSearchOrder}
       />
     </div>

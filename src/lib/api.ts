@@ -1,6 +1,6 @@
 import { BUSINESS_CONFIG } from '../config/constants';
 import { CreateOrderDTO } from '../server/service';
-import { AdminSetupStatus, AdminUser, Category, Order, OrderStatus, Product } from '../types';
+import { AdminSetupStatus, AdminUser, Category, MpesaPublicConfig, Order, OrderStatus, Product } from '../types';
 import { storage } from './storage';
 
 function getAuthHeaders(extra?: Record<string, string>): Record<string, string> {
@@ -289,5 +289,79 @@ export const api = {
     } catch (err: any) {
       return { success: false, error: err.message || 'Network error' };
     }
+  },
+
+  // M-Pesa Daraja Direct Integration & Runtime Payment Settings
+  async getMpesaConfig(): Promise<MpesaPublicConfig> {
+    try {
+      const res = await fetch('/api/mpesa/config');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          return {
+            enabled: Boolean(json.data.enabled),
+            till: String(json.data.till || ''),
+            storeName: String(json.data.storeName || BUSINESS_CONFIG.mpesaStoreName),
+          };
+        }
+      }
+    } catch {
+      // Fallback gracefully without exposing any fake Till
+    }
+    return { enabled: false, till: '', storeName: BUSINESS_CONFIG.mpesaStoreName };
+  },
+
+  async updatePaymentSettings(data: {
+    mpesaTill: string;
+    mpesaStoreName: string;
+  }): Promise<{ success: boolean; data?: MpesaPublicConfig; message?: string; error?: string }> {
+    try {
+      const res = await fetch('/api/admin/payment-settings', {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(data),
+      });
+      if (res.status === 401) {
+        storage.setAdminLoggedIn(false);
+        return { success: false, error: 'Session expired. Please sign in again.' };
+      }
+      const json = await res.json().catch(() => ({}));
+      return json;
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error' };
+    }
+  },
+
+  async initiateMpesaStkPush(
+    orderId: string,
+    phone: string
+  ): Promise<{ order: Order; customerMessage: string; phone: string }> {
+    const res = await fetch('/api/mpesa/stkpush', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, phone }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success || !json.data) {
+      throw new Error(json.error || 'Could not send M-Pesa prompt to your phone.');
+    }
+    if (json.data.order) {
+      storage.updateOrder(json.data.order);
+    }
+    return json.data;
+  },
+
+  async queryMpesaStatus(orderId: string): Promise<Order | null> {
+    const res = await fetch('/api/mpesa/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && json.success && json.data) {
+      storage.updateOrder(json.data);
+      return json.data;
+    }
+    return null;
   },
 };
