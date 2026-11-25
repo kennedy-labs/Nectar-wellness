@@ -186,19 +186,19 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
       <div
-        className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-[#E6E4DD] overflow-hidden my-6"
+        className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-[#E6E4DD] overflow-hidden my-1 sm:my-6 flex flex-col max-h-[92dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#EAE8E1] flex items-center justify-between bg-[#FAFAF8]">
+        <div className="p-4 sm:p-5 border-b border-[#EAE8E1] flex items-center justify-between bg-[#FAFAF8] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#EBF1ED] text-[#224032] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#EBF1ED] text-[#224032] flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-medium text-lg text-[#172A22]">
+              <h2 className="font-display font-medium text-base sm:text-lg text-[#172A22]">
                 {product ? 'Edit Herbal Remedy' : 'Add New Herbal Remedy'}
               </h2>
               <p className="text-[11px] text-[#65736A]">
@@ -209,7 +209,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="w-8 h-8 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#EFECE5] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#EFECE5] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
@@ -217,13 +217,13 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-xl bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-2">
+          <div className="mx-4 sm:mx-6 mt-4 p-3 rounded-xl bg-[#FDF2F2] border border-[#F8D7D7] text-xs text-[#9B1C1C] flex items-center gap-2 shrink-0">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-5 max-h-[76vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-7 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-5 overflow-y-auto flex-1">
           {/* Main Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -236,7 +236,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Pure Himalayan Shilajit Resin"
-                className="w-full text-xs sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] text-[#242A24]"
+                className="w-full min-h-[44px] text-base sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] text-[#242A24]"
               />
             </div>
 
@@ -247,7 +247,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full text-xs sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
+                className="w-full min-h-[44px] text-base sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -268,7 +268,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                   required
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full text-xs sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] font-mono tabular-nums text-[#242A24]"
+                  className="w-full min-h-[44px] text-base sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] font-mono tabular-nums text-[#242A24]"
                 />
               </div>
 
@@ -282,7 +282,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                   required
                   value={stockQuantity}
                   onChange={(e) => setStockQuantity(e.target.value)}
-                  className="w-full text-xs sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] font-mono tabular-nums text-[#242A24]"
+                  className="w-full min-h-[44px] text-base sm:text-sm p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] font-mono tabular-nums text-[#242A24]"
                 />
               </div>
             </div>
@@ -334,12 +334,12 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                   className="w-14 h-14 rounded-lg object-cover bg-white border border-[#D5D3CA] shrink-0"
                 />
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   {imageMode === 'preset' ? (
                     <select
                       value={image}
                       onChange={(e) => setImage(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-lg border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
+                      className="w-full min-h-[44px] text-base sm:text-xs p-2.5 rounded-lg border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
                     >
                       {PRESET_IMAGES.map((img) => (
                         <option key={img.path} value={img.path}>
@@ -349,13 +349,13 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                     </select>
                   ) : (
                     <div className="relative">
-                      <LinkIcon className="w-3.5 h-3.5 text-[#88968C] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <LinkIcon className="w-3.5 h-3.5 text-[#88968C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="url"
                         value={image}
                         onChange={(e) => setImage(e.target.value)}
                         placeholder="https://example.com/images/herbal-product.jpg"
-                        className="w-full pl-9 pr-3 py-2.5 text-xs rounded-lg border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
+                        className="w-full min-h-[44px] pl-9 pr-3 py-2.5 text-base sm:text-xs rounded-lg border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
                       />
                     </div>
                   )}
@@ -373,7 +373,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detailed herbal properties, origin, grade, and traditional harvesting context..."
-                className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24] leading-relaxed"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24] leading-relaxed"
               />
             </div>
 
@@ -387,7 +387,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 value={benefitsText}
                 onChange={(e) => setBenefitsText(e.target.value)}
                 placeholder="Traditionally used to support vitality...&#10;Commonly associated with balanced energy...&#10;Supports natural physical recovery..."
-                className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24] leading-relaxed"
+                className="w-full text-base sm:text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24] leading-relaxed"
               />
               <p className="text-[10px] text-[#6E7D73] mt-1">
                 * Regulatory guideline: Please use non-absolute phrasing (e.g. "supports vitality", "traditionally used for").
@@ -404,7 +404,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 value={ingredientsText}
                 onChange={(e) => setIngredientsText(e.target.value)}
                 placeholder="Organic Ashwagandha root, Vegetable glycerine, Purified spring water..."
-                className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
+                className="w-full min-h-[44px] text-base sm:text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
               />
             </div>
 
@@ -418,7 +418,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
                 value={usageInstructions}
                 onChange={(e) => setUsageInstructions(e.target.value)}
                 placeholder="e.g. Dissolve pea-sized resin in warm water or milk once daily morning."
-                className="w-full text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
+                className="w-full min-h-[44px] text-base sm:text-xs p-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#2D4C3D] text-[#242A24]"
               />
             </div>
 
@@ -507,7 +507,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs px-4 py-2.5 rounded-xl border border-[#D5D3CA] text-[#425046] hover:bg-[#F5F4F0] transition-colors cursor-pointer"
+                className="min-h-[44px] text-xs px-4 py-2.5 rounded-xl border border-[#D5D3CA] text-[#425046] hover:bg-[#F5F4F0] transition-colors cursor-pointer touch-manipulation"
               >
                 Cancel
               </button>
@@ -515,7 +515,7 @@ export const AdminProductEditor: React.FC<AdminProductEditorProps> = ({
               <button
                 type="submit"
                 disabled={saving}
-                className="bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7E9386] text-white text-xs sm:text-sm font-medium px-5 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
+                className="min-h-[44px] bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7E9386] text-white text-xs sm:text-sm font-medium px-5 py-2.5 rounded-xl shadow-xs flex items-center gap-2 transition-colors cursor-pointer touch-manipulation"
               >
                 <Save className="w-4 h-4" />
                 <span>{saving ? 'Saving...' : product ? 'Save Changes' : 'Create Remedy'}</span>

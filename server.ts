@@ -11,6 +11,7 @@ import { service } from './src/server/service.js';
 import { initPostgres } from './src/server/postgres.js';
 import { createAdminToken, verifyAdminToken } from './src/server/auth.js';
 import { getMpesaConfig, initiateStkPush, queryStkPushStatus } from './src/server/mpesa.js';
+import compression from 'compression';
 import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,14 +49,21 @@ async function startServer() {
     console.warn('PostgreSQL initialization skipped/failed:', err.message);
   }
 
+  app.use(compression({ threshold: 1024 }));
   app.use(express.json());
 
   // Products API
   app.get('/api/products', (req: Request, res: Response) => {
     try {
-      const products = isAdminRequest(req)
+      const admin = isAdminRequest(req);
+      const products = admin
         ? service.listAllProducts()
         : service.listActiveProducts();
+      if (!admin) {
+        res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
+      } else {
+        res.setHeader('Cache-Control', 'no-store');
+      }
       res.json({ success: true, data: products });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
@@ -104,6 +112,7 @@ async function startServer() {
   app.get('/api/categories', (_req: Request, res: Response) => {
     try {
       const categories = repository.findAllCategories();
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       res.json({ success: true, data: categories });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
@@ -426,13 +435,20 @@ async function startServer() {
     }
   });
 
-  // Serve static asset folders directly (ensures images always load in dev & cloud deployments)
-  app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
-  app.use('/assets', express.static(path.resolve(__dirname, 'src/assets')));
-  app.use('/images', express.static(path.resolve(__dirname, 'src/assets/images')));
+  // Serve static asset folders directly with cache headers (ensures images always load fast)
+  const imageCacheOpts = {
+    maxAge: '7d',
+    etag: true,
+    setHeaders: (res: Response) => {
+      res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+    },
+  };
+  app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets'), imageCacheOpts));
+  app.use('/assets', express.static(path.resolve(__dirname, 'src/assets'), imageCacheOpts));
+  app.use('/images', express.static(path.resolve(__dirname, 'src/assets/images'), imageCacheOpts));
   const publicDir = path.resolve(__dirname, 'public');
   if (fs.existsSync(publicDir)) {
-    app.use(express.static(publicDir));
+    app.use(express.static(publicDir, { maxAge: '1d', etag: true }));
   }
 
   // Dev mode: Mount Vite middleware
@@ -449,6 +465,7 @@ async function startServer() {
   } else {
     // Production mode: verify dist folder exists or build it
     const distPath = path.resolve(__dirname, 'dist');
+    const distAssetsPath = path.resolve(distPath, 'assets');
     const indexPath = path.resolve(distPath, 'index.html');
     if (!fs.existsSync(indexPath)) {
       console.log('📦 Client bundle not found. Building with Vite for production...');
@@ -459,9 +476,30 @@ async function startServer() {
       }
     }
 
-    app.use(express.static(distPath));
+    if (fs.existsSync(distAssetsPath)) {
+      app.use(
+        '/assets',
+        express.static(distAssetsPath, {
+          maxAge: '365d',
+          immutable: true,
+          etag: true,
+        })
+      );
+    }
+    app.use(
+      express.static(distPath, {
+        maxAge: '1h',
+        etag: true,
+        setHeaders: (res: Response, filePath: string) => {
+          if (filePath.endsWith('index.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+          }
+        },
+      })
+    );
     app.get('*', (_req: Request, res: Response) => {
       if (fs.existsSync(indexPath)) {
+        res.setHeader('Cache-Control', 'no-cache');
         res.sendFile(indexPath);
       } else {
         res.status(500).send('Client build is processing. Please refresh in a few moments.');

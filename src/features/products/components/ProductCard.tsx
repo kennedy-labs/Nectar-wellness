@@ -31,7 +31,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <img
           src={product.image}
           alt={product.name}
+          width={960}
+          height={717}
           loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
           onError={(e) => {
@@ -68,8 +71,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           ) : null}
         </div>
 
-        {/* Quick view hover affordance */}
-        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        {/* Quick view hover affordance (desktop only) */}
+        <div className="hidden sm:flex absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center pointer-events-none">
           <span className="bg-white/90 backdrop-blur-xs text-[#1E3B2F] text-xs font-medium px-3 py-1.5 rounded-md shadow-xs flex items-center gap-1.5">
             <Eye className="w-3.5 h-3.5" />
             <span>Details</span>
@@ -110,7 +113,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               title="Inquire on WhatsApp about this item"
-              className="text-xs font-medium text-[#2E7D32] hover:text-[#1B5E20] flex items-center gap-1 transition-colors"
+              className="text-xs font-medium text-[#2E7D32] hover:text-[#1B5E20] flex items-center gap-1 min-h-[36px] px-1 -mr-1 transition-colors"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Ask Owner</span>
@@ -120,7 +123,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => onSelect(product)}
-              className="w-full text-xs font-medium text-[#304B3E] hover:text-[#172A22] bg-[#F2F6F3] hover:bg-[#E4ECE6] py-2 rounded-lg transition-colors cursor-pointer"
+              className="w-full min-h-[42px] py-2.5 px-2 text-xs font-medium text-[#304B3E] hover:text-[#172A22] bg-[#F2F6F3] hover:bg-[#E4ECE6] rounded-lg transition-colors cursor-pointer touch-manipulation"
             >
               Ingredients & Use
             </button>
@@ -128,7 +131,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <button
               onClick={() => onAddToCart(product)}
               disabled={isOutOfStock}
-              className={`w-full text-xs font-medium py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`w-full min-h-[42px] py-2.5 px-2 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation ${
                 isOutOfStock
                   ? 'bg-[#EAEAEA] text-[#888888] cursor-not-allowed'
                   : isAdded

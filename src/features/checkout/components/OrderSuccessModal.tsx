@@ -27,15 +27,15 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
   const whatsappUrl = buildWhatsAppOrderUrl(order);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-xs flex items-end sm:items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
       <div
-        className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-[#E6E4DD] p-6 sm:p-8 space-y-6 text-center my-6"
+        className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-[#E6E4DD] p-4 sm:p-8 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-5 sm:space-y-6 text-center my-1 sm:my-6 max-h-[92dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 w-8 h-8 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#F2F1EC] flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#F2F1EC] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
         >
           <X className="w-5 h-5" />
         </button>
@@ -78,7 +78,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors"
+            className="w-full min-h-[46px] bg-[#25D366] hover:bg-[#20BA5A] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-xs transition-colors touch-manipulation"
           >
             <MessageCircle className="w-4 h-4 fill-white text-[#25D366]" />
             <span>Continue Order on WhatsApp Now</span>
@@ -108,7 +108,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             onClick={() => onTrackOrder(order.id)}
-            className="text-xs font-medium text-[#2D4C3D] hover:text-[#1B3627] flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-[#F2F5F3] transition-colors cursor-pointer"
+            className="min-h-[44px] text-xs font-medium text-[#2D4C3D] hover:text-[#1B3627] flex items-center gap-1.5 py-2 px-4 rounded-lg hover:bg-[#F2F5F3] transition-colors cursor-pointer touch-manipulation"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>Track Order Status</span>

@@ -190,12 +190,12 @@ export const MpesaPayBox: React.FC<MpesaPayBoxProps> = ({
                 <Loader2 className="w-4 h-4 animate-spin text-[#2E7D32] shrink-0" />
                 <span>{statusMessage || 'Check your phone and enter your M-Pesa PIN to complete payment.'}</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
                   onClick={handleVerifyNow}
                   disabled={checkingStatus}
-                  className="flex-1 bg-[#20392D] hover:bg-[#162920] disabled:opacity-60 text-white py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 min-h-[44px] bg-[#20392D] hover:bg-[#162920] disabled:opacity-60 text-white py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${checkingStatus ? 'animate-spin' : ''}`} />
                   <span>{checkingStatus ? 'Verifying...' : "I've Paid — Verify Now"}</span>
@@ -204,7 +204,7 @@ export const MpesaPayBox: React.FC<MpesaPayBoxProps> = ({
                   type="button"
                   onClick={handleSendStkPush}
                   disabled={sendingPrompt}
-                  className="px-3 py-2.5 rounded-lg border border-[#C9D8CE] bg-white hover:bg-[#F5F8F6] text-[#1F372C] text-xs font-medium cursor-pointer"
+                  className="min-h-[44px] px-4 py-2.5 rounded-lg border border-[#C9D8CE] bg-white hover:bg-[#F5F8F6] text-[#1F372C] text-xs font-medium cursor-pointer touch-manipulation"
                 >
                   Resend
                 </button>
@@ -218,13 +218,13 @@ export const MpesaPayBox: React.FC<MpesaPayBoxProps> = ({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="M-Pesa Number (e.g. 07XX...)"
-                  className="flex-1 text-xs px-3 py-2.5 rounded-lg border border-[#CED9D1] bg-white focus:border-[#2D4C3D] outline-none text-[#172A22]"
+                  className="flex-1 min-h-[44px] text-base sm:text-xs px-3 py-2.5 rounded-lg border border-[#CED9D1] bg-white focus:border-[#2D4C3D] outline-none text-[#172A22]"
                 />
                 <button
                   type="button"
                   onClick={handleSendStkPush}
                   disabled={sendingPrompt}
-                  className="bg-[#2E7D32] hover:bg-[#236326] disabled:bg-[#82AD85] text-white px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
+                  className="min-h-[44px] bg-[#2E7D32] hover:bg-[#236326] disabled:bg-[#82AD85] text-white px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap touch-manipulation"
                 >
                   {sendingPrompt ? (
                     <>
@@ -254,7 +254,7 @@ export const MpesaPayBox: React.FC<MpesaPayBoxProps> = ({
             <button
               type="button"
               onClick={handleCopyTill}
-              className="text-[#2D4C3D] hover:text-[#183023] flex items-center gap-1 font-medium cursor-pointer"
+              className="text-[#2D4C3D] hover:text-[#183023] flex items-center gap-1 font-medium cursor-pointer min-h-[36px] px-2 -mr-2 rounded-lg hover:bg-[#EFECE5] transition-colors"
             >
               {copiedTill ? (
                 <>

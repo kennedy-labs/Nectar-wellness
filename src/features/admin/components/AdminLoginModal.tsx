@@ -89,7 +89,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={BUSINESS_CONFIG.adminDefaultPhone}
-                className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 text-base sm:text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
               />
             </div>
           </div>
@@ -106,7 +106,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 text-base sm:text-sm bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
               />
             </div>
           </div>
@@ -114,7 +114,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <button
             type="submit"
             disabled={loading || !phone || !password}
-            className="w-full bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-2.5 px-4 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+            className="w-full min-h-[46px] bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-2.5 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer touch-manipulation"
           >
             {loading ? 'Verifying...' : 'Sign In'}
           </button>

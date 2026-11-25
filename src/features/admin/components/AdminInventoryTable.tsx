@@ -98,7 +98,7 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
 
         <button
           onClick={onAddNew}
-          className="bg-[#20392D] hover:bg-[#162920] text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
+          className="min-h-[44px] bg-[#20392D] hover:bg-[#162920] text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0 touch-manipulation"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Remedy</span>
@@ -107,23 +107,23 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#8A978E] absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 min-w-0">
+          <Search className="w-4 h-4 text-[#8A978E] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search remedy name, herb, or ingredient..."
-            className="w-full pl-10 pr-3.5 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D] text-[#242A24]"
+            className="w-full min-h-[44px] pl-10 pr-3.5 py-2 text-base sm:text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D] text-[#242A24]"
           />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Filter className="w-3.5 h-3.5 text-[#65756B]" />
+          <Filter className="w-3.5 h-3.5 text-[#65756B] shrink-0" />
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="text-xs py-2 px-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D] text-[#242A24]"
+            className="w-full sm:w-auto min-h-[44px] text-base sm:text-xs py-2 px-3 rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D] text-[#242A24]"
           >
             <option value="all">All Categories ({products.length})</option>
             {categories.map((c) => (
@@ -135,8 +135,126 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border border-[#E4E2DA] rounded-2xl overflow-hidden bg-white shadow-2xs">
+      {/* Mobile Cards (phones) */}
+      <div className="md:hidden space-y-3">
+        {filteredProducts.length === 0 ? (
+          <div className="p-8 text-center text-xs text-[#748279] border border-[#E4E2DA] rounded-2xl bg-white">
+            No remedies found matching your search.
+          </div>
+        ) : (
+          filteredProducts.map((product) => {
+            const isOutOfStock = product.stockQuantity <= 0;
+            const isLowStock = product.stockQuantity > 0 && product.stockQuantity <= 5;
+            return (
+              <div
+                key={product.id}
+                className="p-3.5 rounded-2xl border border-[#E4E2DA] bg-white shadow-2xs space-y-3"
+              >
+                <div className="flex items-start gap-3">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    width={48}
+                    height={48}
+                    decoding="async"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        '/src/assets/images/hero_wellness_botanicals_1790820582973.jpg';
+                    }}
+                    className="w-12 h-12 rounded-lg object-cover bg-[#F0EFEB] border border-[#E8E6DF] shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-[#1E2E25] leading-snug">
+                      {product.name}
+                    </div>
+                    <div className="text-[11px] text-[#526056] mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <span>{product.categoryName}</span>
+                      <span>·</span>
+                      <span className="font-mono font-semibold text-[#1F372C] tabular-nums">
+                        {formatKES(product.price)}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onToggleActive(product)}
+                    className={`min-h-[34px] text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors cursor-pointer shrink-0 ${
+                      product.isActive
+                        ? 'bg-[#EBF5EF] text-[#245C38]'
+                        : 'bg-[#F2F2F2] text-[#777777]'
+                    }`}
+                  >
+                    {product.isActive ? 'Active' : 'Hidden'}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#F0EFEB]">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center border border-[#DAD8CF] rounded-lg bg-[#FAFAF8] overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onUpdateStock(product.id, Math.max(0, product.stockQuantity - 1))
+                        }
+                        aria-label="Decrease stock"
+                        className="min-w-[38px] min-h-[38px] flex items-center justify-center text-sm text-[#4F5B52] hover:bg-[#EAE8E1] cursor-pointer touch-manipulation"
+                      >
+                        -
+                      </button>
+                      <span className="px-2.5 text-xs font-mono font-semibold min-w-8 text-center tabular-nums">
+                        {product.stockQuantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateStock(product.id, product.stockQuantity + 1)}
+                        aria-label="Increase stock"
+                        className="min-w-[38px] min-h-[38px] flex items-center justify-center text-sm text-[#4F5B52] hover:bg-[#EAE8E1] cursor-pointer touch-manipulation"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {isOutOfStock ? (
+                      <span className="text-[10px] font-semibold text-[#C53030] bg-[#FDF2F2] px-1.5 py-0.5 rounded">
+                        Out
+                      </span>
+                    ) : isLowStock ? (
+                      <span className="text-[10px] font-semibold text-[#B45309] bg-[#FEF3C7] px-1.5 py-0.5 rounded">
+                        Low
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onDuplicateProduct(product)}
+                      className="min-w-[38px] min-h-[38px] rounded-lg text-[#556358] hover:text-[#172A22] hover:bg-[#EFECE5] flex items-center justify-center cursor-pointer touch-manipulation"
+                      title="Duplicate as new product"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onEditProduct(product)}
+                      className="min-w-[38px] min-h-[38px] rounded-lg text-[#20392D] hover:bg-[#EAF0EC] flex items-center justify-center cursor-pointer touch-manipulation"
+                      title="Edit remedy details"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setProductToDelete(product)}
+                      className="min-w-[38px] min-h-[38px] rounded-lg text-[#C53030] hover:bg-[#FDF2F2] flex items-center justify-center cursor-pointer touch-manipulation"
+                      title="Delete remedy"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block border border-[#E4E2DA] rounded-2xl overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#F8F9F8] border-b border-[#EAE8E1] text-[#556358] uppercase font-semibold tracking-wider">
@@ -322,7 +440,7 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
               <button
                 type="button"
                 onClick={() => setProductToDelete(null)}
-                className="px-4 py-2 text-xs rounded-xl border border-[#D5D3CA] text-[#425046] hover:bg-[#F5F4F0] transition-colors cursor-pointer"
+                className="min-h-[42px] px-4 py-2 text-xs rounded-xl border border-[#D5D3CA] text-[#425046] hover:bg-[#F5F4F0] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -330,7 +448,7 @@ export const AdminInventoryTable: React.FC<AdminInventoryTableProps> = ({
                 type="button"
                 disabled={isDeleting}
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 text-xs rounded-xl bg-[#C53030] hover:bg-[#9B2C2C] disabled:opacity-50 text-white font-medium transition-colors cursor-pointer"
+                className="min-h-[42px] px-4 py-2 text-xs rounded-xl bg-[#C53030] hover:bg-[#9B2C2C] disabled:opacity-50 text-white font-medium transition-colors cursor-pointer"
               >
                 {isDeleting ? 'Deleting...' : 'Yes, Delete'}
               </button>

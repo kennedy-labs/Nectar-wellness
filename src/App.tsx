@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useMemo } from 'react';
 import { BUSINESS_CONFIG } from './config/constants';
 import { api } from './lib/api';
 import { storage } from './lib/storage';
@@ -12,17 +12,29 @@ import { TrustFeatures } from './components/layout/TrustFeatures';
 import { WhatsAppFloatingButton } from './components/layout/WhatsAppFloatingButton';
 import { Footer } from './components/layout/Footer';
 
-// Customer Feature Components
+// Eager Product Grid Components (above/near initial fold)
 import { ProductFilter } from './features/products/components/ProductFilter';
 import { ProductGrid } from './features/products/components/ProductGrid';
-import { ProductDetailModal } from './features/products/components/ProductDetailModal';
-import { CartDrawer } from './features/cart/components/CartDrawer';
-import { CheckoutModal } from './features/checkout/components/CheckoutModal';
-import { OrderSuccessModal } from './features/checkout/components/OrderSuccessModal';
-import { OrderTrackerModal } from './features/orders/components/OrderTrackerModal';
 
-// Dedicated Standalone Admin Page
-import { AdminPage } from './features/admin/pages/AdminPage';
+// Lazy-loaded Modals, Drawers & Admin Console (keeps initial mobile JS lean)
+const ProductDetailModal = lazy(() =>
+  import('./features/products/components/ProductDetailModal').then((m) => ({ default: m.ProductDetailModal }))
+);
+const CartDrawer = lazy(() =>
+  import('./features/cart/components/CartDrawer').then((m) => ({ default: m.CartDrawer }))
+);
+const CheckoutModal = lazy(() =>
+  import('./features/checkout/components/CheckoutModal').then((m) => ({ default: m.CheckoutModal }))
+);
+const OrderSuccessModal = lazy(() =>
+  import('./features/checkout/components/OrderSuccessModal').then((m) => ({ default: m.OrderSuccessModal }))
+);
+const OrderTrackerModal = lazy(() =>
+  import('./features/orders/components/OrderTrackerModal').then((m) => ({ default: m.OrderTrackerModal }))
+);
+const AdminPage = lazy(() =>
+  import('./features/admin/pages/AdminPage').then((m) => ({ default: m.AdminPage }))
+);
 
 export default function App() {
   // Routing State: '/' for customer storefront, '/admin' for isolated owner portal
@@ -37,10 +49,10 @@ export default function App() {
     return '/';
   });
 
-  // Core Data State
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Core Data State (pre-seeded synchronously for instant mobile paint, then synced live)
+  const [products, setProducts] = useState<Product[]>(() => storage.getProducts());
+  const [categories, setCategories] = useState<Category[]>(() => storage.getCategories());
+  const [cart, setCart] = useState<CartItem[]>(() => storage.getCart());
   const [orders, setOrders] = useState<Order[]>([]);
   const [paymentConfig, setPaymentConfig] = useState<MpesaPublicConfig>({
     enabled: false,
@@ -360,27 +372,35 @@ export default function App() {
   // -------------------------------------------------------------
   if (currentRoute === '/admin') {
     return (
-      <AdminPage
-        orders={orders}
-        products={products}
-        categories={categories}
-        isLoggedIn={isAdminLoggedIn}
-        mpesaTill={paymentConfig.till}
-        mpesaStoreName={paymentConfig.storeName}
-        onPaymentConfigUpdated={(cfg) => setPaymentConfig(cfg)}
-        onLogin={handleAdminLogin}
-        onLogout={handleAdminLogout}
-        onNavigateHome={() => navigateTo('/')}
-        onUpdateDeliveryFee={handleUpdateDeliveryFee}
-        onUpdateStatus={handleUpdateOrderStatus}
-        onConfirmPayment={handleConfirmPayment}
-        onRevertPayment={handleRevertPayment}
-        onSaveProduct={handleSaveProduct}
-        onDeleteProduct={handleDeleteProduct}
-        onDuplicateProduct={handleDuplicateProduct}
-        onUpdateStock={handleUpdateStock}
-        onToggleActive={handleToggleProductActive}
-      />
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#F7F9F7] flex items-center justify-center text-xs text-[#5D6B62]">
+            Loading Admin Console...
+          </div>
+        }
+      >
+        <AdminPage
+          orders={orders}
+          products={products}
+          categories={categories}
+          isLoggedIn={isAdminLoggedIn}
+          mpesaTill={paymentConfig.till}
+          mpesaStoreName={paymentConfig.storeName}
+          onPaymentConfigUpdated={(cfg) => setPaymentConfig(cfg)}
+          onLogin={handleAdminLogin}
+          onLogout={handleAdminLogout}
+          onNavigateHome={() => navigateTo('/')}
+          onUpdateDeliveryFee={handleUpdateDeliveryFee}
+          onUpdateStatus={handleUpdateOrderStatus}
+          onConfirmPayment={handleConfirmPayment}
+          onRevertPayment={handleRevertPayment}
+          onSaveProduct={handleSaveProduct}
+          onDeleteProduct={handleDeleteProduct}
+          onDuplicateProduct={handleDuplicateProduct}
+          onUpdateStock={handleUpdateStock}
+          onToggleActive={handleToggleProductActive}
+        />
+      </Suspense>
     );
   }
 
@@ -459,55 +479,67 @@ export default function App() {
         hidden={isCartOpen || isCheckoutOpen || Boolean(completedOrder) || isTrackOpen}
       />
 
-      {/* Customer Drawers & Modals */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cart}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveFromCart}
-        onProceedToCheckout={handleProceedToCheckout}
-        directWhatsAppUrl={directWhatsAppCartUrl}
-      />
+      {/* Lazy-Loaded Customer Drawers & Modals */}
+      <Suspense fallback={null}>
+        {isCartOpen && (
+          <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            items={cart}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveFromCart}
+            onProceedToCheckout={handleProceedToCheckout}
+            directWhatsAppUrl={directWhatsAppCartUrl}
+          />
+        )}
 
-      <ProductDetailModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onAddToCart={handleAddToCart}
-      />
+        {selectedProduct && (
+          <ProductDetailModal
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            onAddToCart={handleAddToCart}
+          />
+        )}
 
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        items={cart}
-        mpesaTill={paymentConfig.till}
-        onSubmitOrder={handleSubmitOrder}
-      />
+        {isCheckoutOpen && (
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
+            items={cart}
+            mpesaTill={paymentConfig.till}
+            onSubmitOrder={handleSubmitOrder}
+          />
+        )}
 
-      <OrderSuccessModal
-        order={completedOrder}
-        mpesaTill={paymentConfig.till}
-        mpesaStoreName={paymentConfig.storeName}
-        onClose={() => setCompletedOrder(null)}
-        onOrderUpdated={(updated) => {
-          setCompletedOrder(updated);
-          setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-        }}
-        onTrackOrder={(id) => {
-          setCompletedOrder(null);
-          setTrackOrderId(id);
-          setIsTrackOpen(true);
-        }}
-      />
+        {completedOrder && (
+          <OrderSuccessModal
+            order={completedOrder}
+            mpesaTill={paymentConfig.till}
+            mpesaStoreName={paymentConfig.storeName}
+            onClose={() => setCompletedOrder(null)}
+            onOrderUpdated={(updated) => {
+              setCompletedOrder(updated);
+              setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+            }}
+            onTrackOrder={(id) => {
+              setCompletedOrder(null);
+              setTrackOrderId(id);
+              setIsTrackOpen(true);
+            }}
+          />
+        )}
 
-      <OrderTrackerModal
-        isOpen={isTrackOpen}
-        onClose={() => setIsTrackOpen(false)}
-        initialOrderId={trackOrderId}
-        mpesaTill={paymentConfig.till}
-        mpesaStoreName={paymentConfig.storeName}
-        onSearchOrder={handleSearchOrder}
-      />
+        {isTrackOpen && (
+          <OrderTrackerModal
+            isOpen={isTrackOpen}
+            onClose={() => setIsTrackOpen(false)}
+            initialOrderId={trackOrderId}
+            mpesaTill={paymentConfig.till}
+            mpesaStoreName={paymentConfig.storeName}
+            onSearchOrder={handleSearchOrder}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

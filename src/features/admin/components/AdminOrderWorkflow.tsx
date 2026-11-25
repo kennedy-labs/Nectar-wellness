@@ -566,7 +566,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
                       value={paymentRefInput}
                       onChange={(e) => setPaymentRefInput(e.target.value.toUpperCase())}
                       placeholder="Optional code (e.g. QJK8912P4)"
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono uppercase text-[#182C22] min-h-[38px]"
+                      className="flex-1 px-3 py-2 text-base sm:text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono uppercase text-[#182C22] min-h-[42px]"
                     />
                     <button
                       type="button"
@@ -574,7 +574,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
                         handleConfirmPayment();
                         setShowManualRefInput(false);
                       }}
-                      className="px-3.5 py-2 bg-[#20392D] text-white text-xs font-semibold rounded-xl hover:bg-[#162920] cursor-pointer min-h-[38px]"
+                      className="px-4 py-2 bg-[#20392D] text-white text-xs font-semibold rounded-xl hover:bg-[#162920] cursor-pointer min-h-[42px]"
                     >
                       Save
                     </button>
@@ -631,7 +631,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
                   value={deliveryFeeInput}
                   onChange={(e) => setDeliveryFeeInput(e.target.value)}
                   placeholder="0"
-                  className="w-full pl-12 pr-3 py-2.5 text-sm bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono font-bold focus:border-[#20392D] min-h-[42px]"
+                  className="w-full pl-12 pr-3 py-2.5 text-base sm:text-sm bg-white border border-[#D5D3CA] rounded-xl outline-none font-mono font-bold focus:border-[#20392D] min-h-[44px]"
                 />
               </div>
               <button
@@ -712,7 +712,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               value={adminNotesInput}
               onChange={(e) => setAdminNotesInput(e.target.value)}
               placeholder="e.g. Bolt Rider John (07XX XXX XXX) assigned. Pack with dosing spoon."
-              className="w-full p-2.5 text-xs bg-[#F8FAF8] border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D]"
+              className="w-full p-2.5 text-base sm:text-xs bg-[#F8FAF8] border border-[#D5D3CA] rounded-xl outline-none focus:border-[#20392D]"
             />
           </div>
 
@@ -822,7 +822,7 @@ export const AdminOrderWorkflow: React.FC<AdminOrderWorkflowProps> = ({
               value={statusChangeNotes}
               onChange={(e) => setStatusChangeNotes(e.target.value)}
               placeholder="e.g. Dispatched with Bolt rider"
-              className="w-full px-3 py-2 text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none text-[#182C22] min-h-[40px]"
+              className="w-full px-3 py-2 text-base sm:text-xs bg-white border border-[#D5D3CA] rounded-xl outline-none text-[#182C22] min-h-[44px]"
             />
           </div>
 

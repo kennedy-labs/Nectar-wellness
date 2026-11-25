@@ -31,26 +31,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 pb-24 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
       <div
-        className="relative bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-[#E6E4DD] overflow-hidden my-4 sm:my-8"
+        className="relative bg-white w-full max-w-3xl rounded-2xl shadow-xl border border-[#E6E4DD] overflow-hidden my-1 sm:my-8 flex flex-col max-h-[92dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-[#4A554D] hover:text-[#172A22] border border-[#E0DED7] flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-[#4A554D] hover:text-[#172A22] border border-[#E0DED7] flex items-center justify-center transition-colors shadow-xs cursor-pointer touch-manipulation"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 max-h-[85vh] overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 overflow-y-auto flex-1">
           {/* Image Column */}
           <div className="bg-[#F6F5F0] relative aspect-4/3 md:aspect-auto md:min-h-[380px]">
             <img
               src={product.image}
               alt={product.name}
+              width={960}
+              height={717}
+              decoding="async"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
             />
@@ -64,7 +67,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
 
           {/* Details Column */}
-          <div className="p-6 sm:p-8 flex flex-col justify-between space-y-6">
+          <div className="p-4 sm:p-8 flex flex-col justify-between space-y-5 sm:space-y-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 text-xs text-[#5D6B61] mb-1">
@@ -144,11 +147,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={isOutOfStock || quantity <= 1}
                     aria-label="Decrease quantity"
-                    className="px-3 py-2 text-sm text-[#38433C] hover:bg-[#EAE8E0] transition-colors disabled:opacity-40 cursor-pointer"
+                    className="min-w-[40px] min-h-[44px] flex items-center justify-center text-sm text-[#38433C] hover:bg-[#EAE8E0] transition-colors disabled:opacity-40 cursor-pointer touch-manipulation"
                   >
                     -
                   </button>
-                  <span className="px-3 py-2 text-xs font-semibold font-mono tabular-nums text-[#172A22] min-w-8 text-center">
+                  <span className="px-2.5 text-xs font-semibold font-mono tabular-nums text-[#172A22] min-w-8 text-center">
                     {quantity}
                   </span>
                   <button
@@ -159,7 +162,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     }
                     disabled={isOutOfStock || quantity >= product.stockQuantity}
                     aria-label="Increase quantity"
-                    className="px-3 py-2 text-sm text-[#38433C] hover:bg-[#EAE8E0] transition-colors disabled:opacity-40 cursor-pointer"
+                    className="min-w-[40px] min-h-[44px] flex items-center justify-center text-sm text-[#38433C] hover:bg-[#EAE8E0] transition-colors disabled:opacity-40 cursor-pointer touch-manipulation"
                   >
                     +
                   </button>
@@ -169,7 +172,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <button
                   onClick={handleAdd}
                   disabled={isOutOfStock}
-                  className={`flex-1 py-2.5 px-4 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`flex-1 min-h-[44px] py-2.5 px-4 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer touch-manipulation ${
                     isOutOfStock
                       ? 'bg-[#EAEAEA] text-[#888888] cursor-not-allowed'
                       : justAdded
@@ -196,7 +199,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-2.5 px-4 rounded-lg text-xs font-medium text-[#1E3B2F] bg-[#EAF2ED] hover:bg-[#DDE9E1] border border-[#C5D9CC] flex items-center justify-center gap-2 transition-colors"
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-lg text-xs font-medium text-[#1E3B2F] bg-[#EAF2ED] hover:bg-[#DDE9E1] border border-[#C5D9CC] flex items-center justify-center gap-2 transition-colors touch-manipulation"
               >
                 <MessageCircle className="w-4 h-4 text-[#2E7D32]" />
                 <span>Chat on WhatsApp About This Product</span>

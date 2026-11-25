@@ -129,7 +129,7 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
               <button
                 key={st.key}
                 onClick={() => setFilter(st.key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-2 min-h-[40px] text-xs font-medium rounded-lg transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 touch-manipulation ${
                   filter === st.key
                     ? 'bg-white text-[#192C23] shadow-xs font-semibold'
                     : 'text-[#5B675E] hover:text-[#192C23]'
@@ -155,14 +155,14 @@ export const AdminOrderManagement: React.FC<AdminOrderManagementProps> = ({
         </div>
 
         {/* Instant Search Bar */}
-        <div className="relative min-w-[260px]">
-          <Search className="w-4 h-4 text-[#7C887F] absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative min-w-0 md:max-w-xs w-full">
+          <Search className="w-4 h-4 text-[#7C887F] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search order #, customer, phone, item..."
-            className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#DEDCD5] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+            className="w-full min-h-[44px] pl-9 pr-3.5 py-2 text-base sm:text-xs bg-white border border-[#DEDCD5] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
           />
         </div>
       </div>

@@ -111,13 +111,13 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
       <div
-        className="relative bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-[#E6E4DD] overflow-hidden my-6"
+        className="relative bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-[#E6E4DD] overflow-hidden my-1 sm:my-6 flex flex-col max-h-[92dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#EAE8E1] flex items-center justify-between bg-[#FAFAF8]">
+        <div className="p-4 sm:p-5 border-b border-[#EAE8E1] flex items-center justify-between bg-[#FAFAF8] shrink-0">
           <div>
             <h2 className="font-display font-medium text-lg sm:text-xl text-[#172A22]">
               Track Your Order
@@ -129,13 +129,13 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close tracker"
-            className="w-8 h-8 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#EFECE5] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#EFECE5] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-5 sm:p-7 space-y-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-7 pb-[calc(1.25rem+env(safe-area-inset-bottom))] space-y-5 sm:space-y-6 overflow-y-auto flex-1">
           {/* Search Bar */}
           <form
             onSubmit={(e) => {
@@ -144,20 +144,20 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
             }}
             className="flex gap-2"
           >
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-[#7B8880] absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-[#7B8880] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Enter Order Reference (e.g. NNW-1042)"
-                className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                className="w-full min-h-[44px] pl-9 pr-3.5 py-2.5 text-base sm:text-xs bg-white border border-[#D5D3CA] focus:border-[#2D4C3D] focus:ring-1 focus:ring-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7E9186] text-white px-4 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+              className="min-h-[44px] bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7E9186] text-white px-5 py-2.5 rounded-xl text-xs font-medium transition-colors cursor-pointer shrink-0 touch-manipulation"
             >
               {loading ? 'Searching...' : 'Track'}
             </button>
@@ -216,6 +216,9 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                         <img
                           src={item.productImage}
                           alt={item.productName}
+                          width={40}
+                          height={40}
+                          decoding="async"
                           className="w-10 h-10 rounded-md object-cover bg-[#F0EFEB] shrink-0"
                         />
                         <div>
@@ -273,7 +276,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                 href={buildWhatsAppOrderUrl(order)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white py-3 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
+                className="w-full min-h-[46px] bg-[#25D366] hover:bg-[#20BA5A] text-white py-3 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs touch-manipulation"
               >
                 <MessageCircle className="w-4 h-4 fill-white text-[#25D366]" />
                 <span>Message Apothecary on WhatsApp About Order #{order.id}</span>

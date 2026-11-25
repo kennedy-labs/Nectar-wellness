@@ -283,14 +283,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-[#7A877E] absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
+                      <input
                       type="tel"
                       required
                       autoFocus
                       value={loginPhone}
                       onChange={(e) => setLoginPhone(e.target.value)}
                       placeholder="0757122299"
-                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                      className="w-full min-h-[44px] pl-9 pr-3 py-2.5 text-base sm:text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
                     />
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••"
-                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
+                      className="w-full min-h-[44px] pl-9 pr-3 py-2.5 text-base sm:text-sm bg-[#FAFAF8] border border-[#D5D3CA] focus:border-[#2D4C3D] rounded-xl outline-none text-[#242A24]"
                     />
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   type="submit"
                   disabled={loginLoading || !loginPhone || !loginPassword}
-                  className="w-full bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer shadow-xs"
+                  className="w-full min-h-[46px] bg-[#20392D] hover:bg-[#162920] disabled:bg-[#7D9185] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors cursor-pointer shadow-xs touch-manipulation"
                 >
                   {loginLoading ? 'Verifying...' : 'Sign In to Admin Portal'}
                 </button>
@@ -468,7 +468,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
         {/* Tab 2: Inventory */}
         {activeTab === 'INVENTORY' && (
-          <div className="bg-white p-5 rounded-2xl border border-[#E2E8E4] shadow-xs">
+          <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#E2E8E4] shadow-xs">
             <AdminInventoryTable
               products={products}
               onEditProduct={(p) => {
@@ -489,9 +489,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
         {/* Tab 3: Settings & Admin Credentials */}
         {activeTab === 'SETTINGS' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Admin Credentials Card */}
-            <div className="md:col-span-2 p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-5">
+            <div className="md:col-span-2 p-4 sm:p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0EFEB] pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#EAF0EC] text-[#20392D] flex items-center justify-center shrink-0">
@@ -580,7 +580,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                         onChange={(e) => setNewPhoneInput(e.target.value)}
                         placeholder="0757122299"
                         required
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                        className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                       />
                     </div>
 
@@ -594,7 +594,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                         onChange={(e) => setCurrentPasswordInput(e.target.value)}
                         placeholder="Enter current password"
                         required
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                        className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                       />
                     </div>
 
@@ -607,7 +607,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                         value={newPasswordInput}
                         onChange={(e) => setNewPasswordInput(e.target.value)}
                         placeholder="Leave blank to keep current"
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                        className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                       />
                     </div>
 
@@ -620,7 +620,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                         value={confirmPasswordInput}
                         onChange={(e) => setConfirmPasswordInput(e.target.value)}
                         placeholder="Confirm new password"
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                        className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                       />
                     </div>
                   </div>
@@ -629,7 +629,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     <button
                       type="submit"
                       disabled={passwordLoading}
-                      className="px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                      className="min-h-[44px] px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50 touch-manipulation"
                     >
                       {passwordLoading ? 'Saving Changes...' : 'Save Credentials'}
                     </button>
@@ -641,7 +641,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             {/* M-Pesa Buy Goods Configuration */}
             <form
               onSubmit={handleSavePaymentSettings}
-              className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4"
+              className="p-4 sm:p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4"
             >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-display font-medium text-base text-[#1A2E23]">
@@ -690,7 +690,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     value={tillInput}
                     onChange={(e) => setTillInput(e.target.value)}
                     placeholder="Add real M-Pesa Till when ready"
-                    className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs font-mono rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                   />
                 </div>
                 <div>
@@ -702,7 +702,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     value={storeNameInput}
                     onChange={(e) => setStoreNameInput(e.target.value)}
                     placeholder={BUSINESS_CONFIG.mpesaStoreName}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs rounded-xl border border-[#D5D3CA] bg-white outline-none focus:border-[#20392D]"
                   />
                 </div>
                 <div className="flex justify-between p-2.5 bg-[#F6F8F6] rounded-lg">
@@ -719,7 +719,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     type="button"
                     disabled={paymentSettingsLoading}
                     onClick={() => setTillInput('')}
-                    className="px-3 py-2 text-xs font-medium text-[#5D6B62] hover:text-[#1A2E23] rounded-xl border border-[#DCDAD2] cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 text-xs font-medium text-[#5D6B62] hover:text-[#1A2E23] rounded-xl border border-[#DCDAD2] cursor-pointer touch-manipulation"
                   >
                     Clear Till
                   </button>
@@ -727,7 +727,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 <button
                   type="submit"
                   disabled={paymentSettingsLoading}
-                  className="px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                  className="min-h-[44px] px-4 py-2 bg-[#20392D] hover:bg-[#162920] text-white text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50 touch-manipulation"
                 >
                   {paymentSettingsLoading ? 'Saving...' : 'Save M-Pesa Settings'}
                 </button>
@@ -735,7 +735,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             </form>
 
             {/* Apothecary Shop Logistics */}
-            <div className="p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4">
+            <div className="p-4 sm:p-6 bg-white rounded-2xl border border-[#E2E8E4] shadow-xs space-y-4">
               <h3 className="font-display font-medium text-base text-[#1A2E23]">
                 Apothecary Shop Logistics
               </h3>

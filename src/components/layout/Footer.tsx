@@ -18,10 +18,10 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const cleanTill = mpesaTill.trim();
   return (
-    <footer className="bg-[#1F372C] text-[#DCE7DF] pt-14 pb-12 border-t border-[#172B22]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        {/* Main 4-column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
+    <footer className="bg-[#1F372C] text-[#DCE7DF] pt-10 pb-24 sm:pt-14 sm:pb-12 border-t border-[#172B22]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
+        {/* Main responsive layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-7 sm:gap-8 lg:gap-12">
           {/* Brand & Mission */}
           <div className="md:col-span-4 space-y-3.5">
             <span className="font-display text-2xl text-[#F4F8F5] tracking-tight block">
@@ -49,11 +49,11 @@ export const Footer: React.FC<FooterProps> = ({
             <h4 className="text-xs font-semibold text-[#F4F8F5] tracking-wide uppercase">
               Apothecary
             </h4>
-            <ul className="space-y-2 text-xs text-[#AFC1B4]">
+            <ul className="space-y-1 text-xs text-[#AFC1B4]">
               <li>
                 <button
                   onClick={onScrollToProducts}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-white transition-colors cursor-pointer py-1.5 inline-block"
                 >
                   All Remedies
                 </button>
@@ -61,7 +61,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button
                   onClick={onOpenTrack}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-white transition-colors cursor-pointer py-1.5 inline-block"
                 >
                   Track Recent Order
                 </button>
@@ -69,7 +69,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a
                   href="#delivery-flow"
-                  className="hover:text-white transition-colors"
+                  className="hover:text-white transition-colors py-1.5 inline-block"
                 >
                   Delivery & Logistics
                 </a>

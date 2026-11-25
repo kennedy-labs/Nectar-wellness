@@ -9,9 +9,9 @@ interface TrustFeaturesProps {
 export const TrustFeatures: React.FC<TrustFeaturesProps> = ({ mpesaTill = '' }) => {
   const cleanTill = mpesaTill.trim();
   return (
-    <section className="py-10 border-b border-[#E8E6DF] bg-[#F7F9F7]" id="delivery-flow">
+    <section className="py-8 sm:py-10 border-b border-[#E8E6DF] bg-[#F7F9F7]" id="delivery-flow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-xl mx-auto mb-8">
+        <div className="text-center max-w-xl mx-auto mb-6 sm:mb-8">
           <h2 className="font-display text-xl sm:text-2xl text-[#1E3B2F] tracking-tight">
             How Nature’s Nectar Operates
           </h2>
@@ -20,7 +20,7 @@ export const TrustFeatures: React.FC<TrustFeaturesProps> = ({ mpesaTill = '' }) 
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="p-5 rounded-xl bg-white border border-[#E6E8E3] shadow-2xs space-y-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#EBF1ED] text-[#2C4C3D] flex items-center justify-center">
               <span className="font-display font-bold text-sm">1</span>

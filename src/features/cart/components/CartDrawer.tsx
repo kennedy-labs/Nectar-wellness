@@ -38,7 +38,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10">
         <div className="w-screen max-w-md bg-white border-l border-[#E6E4DD] shadow-2xl flex flex-col">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-[#EAE8E1] flex items-center justify-between">
@@ -56,7 +56,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             <button
               onClick={onClose}
               aria-label="Close bag drawer"
-              className="w-8 h-8 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#F2F1EC] flex items-center justify-center transition-colors cursor-pointer"
+              className="w-10 h-10 rounded-full text-[#5B665E] hover:text-[#172A22] hover:bg-[#F2F1EC] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
             >
               <X className="w-5 h-5" />
             </button>
@@ -89,6 +89,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <img
                     src={item.product.image}
                     alt={item.product.name}
+                    width={64}
+                    height={64}
+                    decoding="async"
                     className="w-16 h-16 rounded-lg object-cover bg-[#F0EFEB] shrink-0"
                   />
 
@@ -102,16 +105,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                     <div className="flex items-center justify-between mt-2">
                       {/* Quantity Stepper */}
-                      <div className="flex items-center border border-[#DAD8CF] rounded-md bg-white">
+                      <div className="flex items-center border border-[#DAD8CF] rounded-md bg-white overflow-hidden">
                         <button
                           onClick={() =>
                             onUpdateQuantity(item.product.id, item.quantity - 1)
                           }
-                          className="px-2 py-0.5 text-xs text-[#4B564E] hover:bg-[#EAE8E1] transition-colors cursor-pointer"
+                          aria-label="Decrease quantity"
+                          className="min-w-[36px] min-h-[36px] flex items-center justify-center text-sm text-[#4B564E] hover:bg-[#EAE8E1] transition-colors cursor-pointer touch-manipulation"
                         >
                           -
                         </button>
-                        <span className="px-2 py-0.5 text-xs font-mono font-medium min-w-5 text-center tabular-nums">
+                        <span className="px-2 text-xs font-mono font-medium min-w-6 text-center tabular-nums">
                           {item.quantity}
                         </span>
                         <button
@@ -119,7 +123,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             onUpdateQuantity(item.product.id, item.quantity + 1)
                           }
                           disabled={item.quantity >= item.product.stockQuantity}
-                          className="px-2 py-0.5 text-xs text-[#4B564E] hover:bg-[#EAE8E1] transition-colors disabled:opacity-40 cursor-pointer"
+                          aria-label="Increase quantity"
+                          className="min-w-[36px] min-h-[36px] flex items-center justify-center text-sm text-[#4B564E] hover:bg-[#EAE8E1] transition-colors disabled:opacity-40 cursor-pointer touch-manipulation"
                         >
                           +
                         </button>
@@ -129,9 +134,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <button
                         onClick={() => onRemoveItem(item.product.id)}
                         title="Remove item"
-                        className="text-[#88948B] hover:text-[#C53030] p-1 transition-colors cursor-pointer"
+                        aria-label="Remove item"
+                        className="text-[#88948B] hover:text-[#C53030] min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-[#FDF2F2] transition-colors cursor-pointer touch-manipulation"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -142,7 +148,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Footer & Actions */}
           {items.length > 0 && (
-            <div className="p-4 sm:p-5 border-t border-[#EAE8E1] bg-[#FAFAF7] space-y-3">
+            <div className="p-4 sm:p-5 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-[#EAE8E1] bg-[#FAFAF7] space-y-3">
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-[#4D5A50]">
                   <span>Products Subtotal</span>
@@ -164,7 +170,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <div className="space-y-2 pt-1">
                 <button
                   onClick={onProceedToCheckout}
-                  className="w-full bg-[#20392D] hover:bg-[#162920] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                  className="w-full min-h-[46px] bg-[#20392D] hover:bg-[#162920] text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer touch-manipulation"
                 >
                   <span>Submit Order for Confirmation</span>
                   <ArrowRight className="w-4 h-4" />
@@ -174,7 +180,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   href={directWhatsAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-white hover:bg-[#F2F6F3] text-[#1E3B2F] border border-[#CCD8CF] py-2.5 px-4 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+                  className="w-full min-h-[44px] bg-white hover:bg-[#F2F6F3] text-[#1E3B2F] border border-[#CCD8CF] py-2.5 px-4 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation"
                 >
                   <MessageCircle className="w-4 h-4 text-[#2E7D32]" />
                   <span>Send Cart Directly to WhatsApp</span>

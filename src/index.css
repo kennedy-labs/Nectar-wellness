@@ -16,6 +16,12 @@
   --color-earth-800: #42382c;
 }
 
+html,
+body {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
 :root {
   font-family: "Plus Jakarta Sans", sans-serif;
   color-scheme: light;
@@ -26,9 +32,31 @@ body {
   color: #242a24;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .font-display {
   font-family: "Fraunces", Georgia, serif;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
